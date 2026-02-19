@@ -50,5 +50,5 @@ export interface ToolFilterOptions {
 
 /** The supyagent client interface */
 export interface SupyagentClient {
-  tools(options?: ToolFilterOptions): Promise<Record<string, unknown>>;
+  tools(options?: ToolFilterOptions): Promise<Record<string, import("ai").Tool>>;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@supyagent/sdk",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Supyagent SDK — AI SDK tools, persistence, and UI components",
   "type": "module",
   "exports": {
@@ -17,7 +17,9 @@
       "types": "./dist/react.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -34,10 +36,18 @@
     "react-dom": ">=18.0.0"
   },
   "peerDependenciesMeta": {
-    "@prisma/client": { "optional": true },
-    "lucide-react": { "optional": true },
-    "react": { "optional": true },
-    "react-dom": { "optional": true }
+    "@prisma/client": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

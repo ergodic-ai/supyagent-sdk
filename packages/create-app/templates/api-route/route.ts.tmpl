@@ -1,4 +1,4 @@
-import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import { convertToCoreMessages, streamText, type UIMessage } from 'ai';
 {{aiProviderImport}};
 import { supyagent } from '@supyagent/sdk';
 import { createPrismaAdapter } from '@supyagent/sdk/prisma';
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model: {{aiModel}},
     system: 'You are a helpful assistant. Use your tools when asked to interact with connected services.',
-    messages: convertToModelMessages(messages),
+    messages: convertToCoreMessages(messages),
     tools,
     maxSteps: 5,
     onFinish: async ({ response }) => {
@@ -25,5 +25,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toDataStreamResponse();
 }

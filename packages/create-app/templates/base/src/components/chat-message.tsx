@@ -31,8 +31,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
           if (part.type === "tool-invocation") {
             return (
               <div key={i} className="space-y-2">
-                <SupyagentToolCall part={part as Record<string, unknown>} />
-                <SupyagentToolResult part={part as Record<string, unknown>} />
+                <SupyagentToolCall part={part as any} />
+                <SupyagentToolResult part={part as any} />
               </div>
             );
           }

@@ -1,18 +1,12 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import type { UIMessage } from "ai";
 import { Chat } from "@/components/chat";
-
-interface ChatMessage {
-  id: string;
-  role: string;
-  parts: Array<{ type: string; [key: string]: unknown }>;
-  metadata?: Record<string, unknown>;
-}
 
 export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [initialMessages, setInitialMessages] = useState<ChatMessage[] | null>(null);
+  const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(null);
 
   useEffect(() => {
     fetch(`/api/chats/${id}`)

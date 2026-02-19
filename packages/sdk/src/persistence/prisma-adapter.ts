@@ -1,44 +1,13 @@
 import type { ChatAdapter, ChatSummary, UIMessageLike } from "./types.js";
 
 /**
- * Minimal PrismaClient interface — just the methods we use.
- * Avoids importing @prisma/client at the type level.
+ * Accepts any PrismaClient instance.
+ * We use `any` here because Prisma generates unique client types per schema,
+ * and a structural interface can't satisfy Prisma's branded enum types
+ * (e.g. SortOrder). The implementation only calls standard Prisma methods.
  */
-interface PrismaLike {
-  chat: {
-    upsert: (args: {
-      where: { id: string };
-      create: { id: string; title: string };
-      update: { title?: string };
-    }) => Promise<unknown>;
-    findMany: (args: {
-      orderBy: { updatedAt: string };
-      select: { id: boolean; title: boolean; createdAt: boolean; updatedAt: boolean };
-    }) => Promise<ChatSummary[]>;
-    delete: (args: { where: { id: string } }) => Promise<unknown>;
-  };
-  message: {
-    count: (args: { where: { chatId: string } }) => Promise<number>;
-    createMany: (args: {
-      data: Array<{
-        id: string;
-        chatId: string;
-        role: string;
-        parts: string;
-        metadata: string | null;
-      }>;
-    }) => Promise<unknown>;
-    findMany: (args: {
-      where: { chatId: string };
-      orderBy: { createdAt: string };
-    }) => Promise<Array<{
-      id: string;
-      role: string;
-      parts: string;
-      metadata: string | null;
-    }>>;
-  };
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaLike = any;
 
 /**
  * Create a ChatAdapter backed by Prisma.
@@ -90,7 +59,7 @@ export function createPrismaAdapter(prisma: PrismaLike): ChatAdapter {
         orderBy: { createdAt: "asc" },
       });
 
-      return messages.map((msg) => ({
+      return messages.map((msg: { id: string; role: string; parts: string; metadata: string | null }) => ({
         id: msg.id,
         role: msg.role,
         parts: JSON.parse(msg.parts),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatSidebar } from "./chat-sidebar";
@@ -8,7 +9,7 @@ import { useRef, useEffect } from "react";
 
 interface ChatProps {
   chatId: string;
-  initialMessages: Parameters<typeof useChat>[0] extends { initialMessages?: infer M } ? M : never;
+  initialMessages: UIMessage[];
 }
 
 export function Chat({ chatId, initialMessages }: ChatProps) {
@@ -16,7 +17,7 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
     useChat({
       api: "/api/chat",
       body: { chatId },
-      initialMessages: initialMessages as Parameters<typeof useChat>[0]["initialMessages"],
+      initialMessages,
     });
 
   const scrollRef = useRef<HTMLDivElement>(null);

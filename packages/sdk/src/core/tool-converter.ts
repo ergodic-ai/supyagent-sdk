@@ -10,8 +10,8 @@ export function convertTools(
   tools: OpenAITool[],
   baseUrl: string,
   apiKey: string
-): Record<string, ReturnType<typeof tool>> {
-  const result: Record<string, ReturnType<typeof tool>> = {};
+): Record<string, import("ai").Tool> {
+  const result: Record<string, import("ai").Tool> = {};
 
   for (const t of tools) {
     const { name, description, parameters } = t.function;
