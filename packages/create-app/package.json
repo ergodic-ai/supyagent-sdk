@@ -1,0 +1,24 @@
+{
+  "name": "create-supyagent-app",
+  "version": "0.1.0",
+  "description": "Create a supyagent-powered chatbot app",
+  "type": "module",
+  "bin": {
+    "create-supyagent-app": "./dist/index.js"
+  },
+  "files": ["dist", "templates"],
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.8.0",
+    "nypm": "^0.4.0",
+    "picocolors": "^1.1.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  },
+  "license": "MIT"
+}

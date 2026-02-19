@@ -1,0 +1,29 @@
+import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+{{aiProviderImport}};
+import { supyagent } from '@supyagent/sdk';
+import { createPrismaAdapter } from '@supyagent/sdk/prisma';
+import { prisma } from '@/lib/prisma';
+
+const client = supyagent({ apiKey: process.env.SUPYAGENT_API_KEY! });
+const adapter = createPrismaAdapter(prisma);
+
+export async function POST(req: Request) {
+  const { messages, chatId }: { messages: UIMessage[]; chatId: string } = await req.json();
+
+  await adapter.saveChat(chatId, messages);
+
+  const tools = await client.tools({ cache: 300 });
+
+  const result = streamText({
+    model: {{aiModel}},
+    system: 'You are a helpful assistant. Use your tools when asked to interact with connected services.',
+    messages: convertToModelMessages(messages),
+    tools,
+    maxSteps: 5,
+    onFinish: async ({ response }) => {
+      await adapter.saveChat(chatId, [...messages, ...response.messages as unknown as UIMessage[]]);
+    },
+  });
+
+  return result.toUIMessageStreamResponse();
+}

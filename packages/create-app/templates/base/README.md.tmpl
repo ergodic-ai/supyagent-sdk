@@ -1,0 +1,30 @@
+# {{projectName}}
+
+A chatbot powered by [Supyagent](https://supyagent.com) with connected integrations.
+
+## Setup
+
+```bash
+cp .env.example .env.local    # Add your API keys
+pnpm db:setup                 # Initialize database
+pnpm dev                      # Start development server
+```
+
+## Getting API Keys
+
+1. **Supyagent API Key**: Sign up at [app.supyagent.com](https://app.supyagent.com) and create an API key
+2. **AI Provider Key**: Get your key from your AI provider's dashboard
+
+## Features
+
+- Chat with an AI assistant that can use your connected integrations
+- Persistent chat history
+- Rich tool result visualization (emails, calendar events, Slack messages, etc.)
+
+## Stack
+
+- [Next.js](https://nextjs.org) — React framework
+- [Vercel AI SDK](https://sdk.vercel.ai) — AI integration
+- [Supyagent](https://supyagent.com) — Third-party service integrations
+- [Prisma](https://prisma.io) — Database ORM
+- [Tailwind CSS](https://tailwindcss.com) — Styling
