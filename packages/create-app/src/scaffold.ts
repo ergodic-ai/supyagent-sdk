@@ -41,6 +41,7 @@ export function scaffoldProject(config: ProjectConfig): void {
   writeProject(projectPath, "tailwind.config.ts", readTemplate("base/tailwind.config.ts"));
   writeProject(projectPath, "postcss.config.js", readTemplate("base/postcss.config.js"));
   writeProject(projectPath, ".gitignore", readTemplate("base/.gitignore"));
+  writeProject(projectPath, ".npmrc", readTemplate("base/.npmrc"));
   writeProject(projectPath, "README.md", applyTemplate(readTemplate("base/README.md.tmpl"), vars));
 
   // ── Source files ──

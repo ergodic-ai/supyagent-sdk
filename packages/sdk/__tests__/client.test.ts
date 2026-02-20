@@ -182,6 +182,18 @@ describe("supyagent client", () => {
     await expect(client.tools()).rejects.toThrow("Supyagent API error (401)");
   });
 
+  it("unwraps data envelope from API response", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, data: MOCK_RESPONSE }),
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const tools = await client.tools();
+
+    expect(Object.keys(tools)).toEqual(["gmail_list_messages", "slack_send_message"]);
+  });
+
   it("returns empty object when no tools", async () => {
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,

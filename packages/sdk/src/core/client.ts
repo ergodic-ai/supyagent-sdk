@@ -48,7 +48,9 @@ export function supyagent(options: SupyagentOptions): SupyagentClient {
           );
         }
 
-        response = (await res.json()) as ToolsResponse;
+        const json = await res.json();
+        // API wraps response in { ok, data: { tools, base_url, total } }
+        response = (json.data ?? json) as ToolsResponse;
 
         // Store in cache if TTL > 0
         if (cacheTTL > 0) {
