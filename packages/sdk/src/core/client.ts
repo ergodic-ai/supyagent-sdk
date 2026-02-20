@@ -59,8 +59,11 @@ export function supyagent(options: SupyagentOptions): SupyagentClient {
       // Use API-reported base_url for tool execution
       const toolBaseUrl = response.base_url || baseUrl;
 
+      // Guard against non-array tools (e.g., API returns empty or unexpected shape)
+      const toolsArray = Array.isArray(response.tools) ? response.tools : [];
+
       // Filter
-      const filtered = filterTools(response.tools, {
+      const filtered = filterTools(toolsArray, {
         only: filterOptions?.only,
         except: filterOptions?.except,
       });

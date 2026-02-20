@@ -20,6 +20,7 @@ export const AI_PROVIDERS = {
   anthropic: {
     label: "Anthropic (Claude)",
     package: "@ai-sdk/anthropic",
+    packageVersion: "^3.0.0",
     import: `import { anthropic } from '@ai-sdk/anthropic'`,
     model: `anthropic('claude-sonnet-4-20250514')`,
     envKey: "ANTHROPIC_API_KEY",
@@ -27,15 +28,17 @@ export const AI_PROVIDERS = {
   openai: {
     label: "OpenAI (GPT)",
     package: "@ai-sdk/openai",
+    packageVersion: "^3.0.0",
     import: `import { openai } from '@ai-sdk/openai'`,
     model: `openai('gpt-4o')`,
     envKey: "OPENAI_API_KEY",
   },
   openrouter: {
     label: "OpenRouter (any model)",
-    package: "@ai-sdk/openrouter",
-    import: `import { openrouter } from '@ai-sdk/openrouter'`,
-    model: `openrouter('anthropic/claude-sonnet-4-20250514')`,
+    package: "@openrouter/ai-sdk-provider",
+    packageVersion: "^2.2.3",
+    import: `import { createOpenRouter } from '@openrouter/ai-sdk-provider'`,
+    model: `createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY })('anthropic/claude-sonnet-4-20250514')`,
     envKey: "OPENROUTER_API_KEY",
   },
 } as const;

@@ -1,22 +1,30 @@
 {
   "name": "@supyagent/sdk",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Supyagent SDK — AI SDK tools, persistence, and UI components",
   "type": "module",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
     "./prisma": {
+      "types": "./dist/prisma.d.ts",
       "import": "./dist/prisma.js",
-      "types": "./dist/prisma.d.ts"
+      "require": "./dist/prisma.cjs",
+      "default": "./dist/prisma.js"
     },
     "./react": {
+      "types": "./dist/react.d.ts",
       "import": "./dist/react.js",
-      "types": "./dist/react.d.ts"
+      "require": "./dist/react.cjs",
+      "default": "./dist/react.js"
     }
   },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "files": [
     "dist"
   ],
@@ -27,7 +35,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "ai": "^4.1.0"
+    "ai": "^6.0.0"
   },
   "peerDependencies": {
     "@prisma/client": ">=5.0.0",

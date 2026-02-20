@@ -1,23 +1,25 @@
 "use client";
 
 import { ArrowUp, Square } from "lucide-react";
-import type { ChangeEvent, FormEvent } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 
 interface ChatInputProps {
-  input: string;
-  handleInputChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
-  handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  sendMessage: (message: { text: string }) => Promise<void>;
   isLoading: boolean;
   stop: () => void;
 }
 
-export function ChatInput({
-  input,
-  handleInputChange,
-  handleSubmit,
-  isLoading,
-  stop,
-}: ChatInputProps) {
+export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
+  const [input, setInput] = useState("");
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    sendMessage({ text: input });
+    setInput("");
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -25,7 +27,7 @@ export function ChatInput({
     >
       <textarea
         value={input}
-        onChange={handleInputChange}
+        onChange={(e) => setInput(e.target.value)}
         placeholder="Send a message..."
         rows={1}
         className="flex-1 resize-none bg-transparent px-4 py-3 text-sm text-zinc-200 placeholder-zinc-500 outline-none"
@@ -33,7 +35,7 @@ export function ChatInput({
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             if (input.trim()) {
-              handleSubmit(e as unknown as FormEvent<HTMLFormElement>);
+              handleSubmit(e as unknown as FormEvent);
             }
           }
         }}

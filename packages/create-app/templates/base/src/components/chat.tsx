@@ -1,11 +1,11 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import type { UIMessage } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatSidebar } from "./chat-sidebar";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 
 interface ChatProps {
   chatId: string;
@@ -13,13 +13,22 @@ interface ChatProps {
 }
 
 export function Chat({ chatId, initialMessages }: ChatProps) {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, stop } =
-    useChat({
-      api: "/api/chat",
-      body: { chatId },
-      initialMessages,
-    });
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: { chatId },
+      }),
+    [chatId]
+  );
 
+  const { messages, sendMessage, status, stop } = useChat({
+    id: chatId,
+    transport,
+    initialMessages,
+  });
+
+  const isLoading = status === "submitted" || status === "streaming";
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,9 +68,7 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
         <div className="border-t border-zinc-800 px-4 py-4">
           <div className="mx-auto max-w-3xl">
             <ChatInput
-              input={input}
-              handleInputChange={handleInputChange}
-              handleSubmit={handleSubmit}
+              sendMessage={sendMessage}
               isLoading={isLoading}
               stop={stop}
             />

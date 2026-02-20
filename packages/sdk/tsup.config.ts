@@ -6,7 +6,7 @@ export default defineConfig([
       index: "src/index.ts",
       prisma: "src/prisma.ts",
     },
-    format: ["esm"],
+    format: ["esm", "cjs"],
     dts: true,
     outDir: "dist",
     clean: true,
@@ -16,7 +16,7 @@ export default defineConfig([
     entry: {
       react: "src/react.tsx",
     },
-    format: ["esm"],
+    format: ["esm", "cjs"],
     dts: true,
     outDir: "dist",
     clean: false,

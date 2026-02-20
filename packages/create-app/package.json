@@ -1,6 +1,6 @@
 {
   "name": "create-supyagent-app",
-  "version": "0.1.2",
+  "version": "0.1.5",
   "description": "Create a supyagent-powered chatbot app",
   "type": "module",
   "bin": {

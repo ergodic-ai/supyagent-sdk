@@ -25,6 +25,7 @@ export function scaffoldProject(config: ProjectConfig): void {
   const vars: Record<string, string> = {
     projectName,
     aiProviderPackage: ai.package,
+    aiProviderVersion: ai.packageVersion,
     aiProviderImport: ai.import,
     aiModel: ai.model,
     aiProviderEnvKey: ai.envKey,
