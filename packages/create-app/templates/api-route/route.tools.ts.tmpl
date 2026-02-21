@@ -1,0 +1,35 @@
+import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from 'ai';
+{{aiProviderImport}};
+import { supyagent, createBashTool } from '@supyagent/sdk';
+import { createPrismaAdapter } from '@supyagent/sdk/prisma';
+import { prisma } from '@/lib/prisma';
+
+const client = supyagent({ apiKey: process.env.SUPYAGENT_API_KEY! });
+const adapter = createPrismaAdapter(prisma);
+
+export async function POST(req: Request) {
+  const { messages, chatId }: { messages: UIMessage[]; chatId: string } = await req.json();
+
+  await adapter.saveChat(chatId, messages as any);
+
+  const supyagentTools = await client.tools({ cache: 300 });
+  const tools = { ...supyagentTools, bash: createBashTool() };
+
+  const result = streamText({
+    model: {{aiModel}},
+    system: 'You are a helpful assistant. Use your tools when asked to interact with connected services. You can also run bash commands to help with tasks. When a tool execution is not approved by the user, do not retry it — explain what you were trying to do and ask how to proceed.',
+    messages: await convertToModelMessages(messages),
+    tools,
+    stopWhen: stepCountIs(5),
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onStepFinish: async ({ messages: updatedMessages }) => {
+      await adapter.saveChat(chatId, updatedMessages as any);
+    },
+    onFinish: async ({ messages: updatedMessages }) => {
+      await adapter.saveChat(chatId, updatedMessages as any);
+    },
+  });
+}

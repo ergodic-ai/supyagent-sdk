@@ -34,23 +34,25 @@ export function createPrismaAdapter(prisma: PrismaLike): ChatAdapter {
         update: { title },
       });
 
-      // Append-only: count existing messages, create only new ones
-      const existingCount = await prisma.message.count({
-        where: { chatId },
-      });
-
-      const newMessages = messages.slice(existingCount);
-      if (newMessages.length > 0) {
-        await prisma.message.createMany({
-          data: newMessages.map((msg) => ({
-            id: msg.id,
-            chatId,
-            role: msg.role,
-            parts: JSON.stringify(msg.parts),
-            metadata: msg.metadata ? JSON.stringify(msg.metadata) : null,
-          })),
-        });
-      }
+      // Upsert each message — works with SQLite and handles race conditions
+      await prisma.$transaction(
+        messages.map((msg) =>
+          prisma.message.upsert({
+            where: { id: msg.id },
+            create: {
+              id: msg.id,
+              chatId,
+              role: msg.role,
+              parts: JSON.stringify(msg.parts),
+              metadata: msg.metadata ? JSON.stringify(msg.metadata) : null,
+            },
+            update: {
+              parts: JSON.stringify(msg.parts),
+              metadata: msg.metadata ? JSON.stringify(msg.metadata) : null,
+            },
+          })
+        )
+      );
     },
 
     async loadChat(chatId: string) {

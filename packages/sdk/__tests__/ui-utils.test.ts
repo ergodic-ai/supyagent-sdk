@@ -37,6 +37,15 @@ describe("getProviderLabel", () => {
     expect(getProviderLabel("hubspot")).toBe("HubSpot");
   });
 
+  it("returns new provider labels", () => {
+    expect(getProviderLabel("stripe")).toBe("Stripe");
+    expect(getProviderLabel("jira")).toBe("Jira");
+    expect(getProviderLabel("salesforce")).toBe("Salesforce");
+    expect(getProviderLabel("brevo")).toBe("Brevo");
+    expect(getProviderLabel("calendly")).toBe("Calendly");
+    expect(getProviderLabel("twilio")).toBe("Twilio");
+  });
+
   it("capitalizes unknown providers", () => {
     expect(getProviderLabel("custom")).toBe("Custom");
   });
@@ -49,6 +58,32 @@ describe("getFormatterType", () => {
     expect(getFormatterType("slack_send_message")).toBe("slack");
     expect(getFormatterType("github_list_issues")).toBe("github");
     expect(getFormatterType("drive_list_files")).toBe("drive");
-    expect(getFormatterType("notion_get_page")).toBe("generic");
+  });
+
+  it("maps new providers to formatter types", () => {
+    expect(getFormatterType("discord_list_channels")).toBe("discord");
+    expect(getFormatterType("notion_get_page")).toBe("notion");
+    expect(getFormatterType("twitter_list_tweets")).toBe("twitter");
+    expect(getFormatterType("telegram_send_message")).toBe("telegram");
+    expect(getFormatterType("stripe_list_customers")).toBe("stripe");
+    expect(getFormatterType("jira_list_issues")).toBe("jira");
+    expect(getFormatterType("salesforce_list_contacts")).toBe("salesforce");
+    expect(getFormatterType("brevo_list_contacts")).toBe("brevo");
+    expect(getFormatterType("calendly_list_events")).toBe("calendly");
+    expect(getFormatterType("twilio_send_sms")).toBe("twilio");
+    expect(getFormatterType("linkedin_get_profile")).toBe("linkedin");
+  });
+
+  it("maps Microsoft prefixes to Google formatters", () => {
+    expect(getFormatterType("microsoft_mail_list_messages")).toBe("email");
+    expect(getFormatterType("microsoft_email_send")).toBe("email");
+    expect(getFormatterType("outlook_list_messages")).toBe("email");
+    expect(getFormatterType("microsoft_calendar_list_events")).toBe("calendar");
+    expect(getFormatterType("microsoft_drive_list_files")).toBe("drive");
+    expect(getFormatterType("onedrive_list_files")).toBe("drive");
+  });
+
+  it("returns generic for unknown providers", () => {
+    expect(getFormatterType("unknown_tool")).toBe("generic");
   });
 });

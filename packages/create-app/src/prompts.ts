@@ -3,7 +3,17 @@ import pc from "picocolors";
 import type { ProjectConfig } from "./utils.js";
 import { AI_PROVIDERS, DB_CONFIGS, resolveProjectPath, projectExists } from "./utils.js";
 
-export async function runPrompts(argName?: string): Promise<ProjectConfig | null> {
+export interface PromptOptions {
+  aiProvider?: ProjectConfig["aiProvider"];
+  database?: ProjectConfig["database"];
+  agentMode?: ProjectConfig["agentMode"];
+  skipDatabase?: boolean;
+}
+
+export async function runPrompts(
+  argName?: string,
+  options?: PromptOptions,
+): Promise<ProjectConfig | null> {
   p.intro(pc.bgCyan(pc.black(" Create Supyagent App ")));
 
   const projectName = argName || await p.text({
@@ -30,32 +40,63 @@ export async function runPrompts(argName?: string): Promise<ProjectConfig | null
     return null;
   }
 
-  const aiProvider = await p.select({
-    message: "AI provider",
-    options: [
-      { value: "anthropic", label: AI_PROVIDERS.anthropic.label },
-      { value: "openai", label: AI_PROVIDERS.openai.label },
-      { value: "openrouter", label: AI_PROVIDERS.openrouter.label },
-    ],
-  }) as "anthropic" | "openai" | "openrouter";
+  let aiProvider: ProjectConfig["aiProvider"];
+  if (options?.aiProvider) {
+    aiProvider = options.aiProvider;
+  } else {
+    const selected = await p.select({
+      message: "AI provider",
+      options: [
+        { value: "anthropic", label: AI_PROVIDERS.anthropic.label },
+        { value: "openai", label: AI_PROVIDERS.openai.label },
+        { value: "openrouter", label: AI_PROVIDERS.openrouter.label },
+      ],
+    }) as "anthropic" | "openai" | "openrouter";
 
-  if (p.isCancel(aiProvider)) {
-    p.cancel("Cancelled.");
-    return null;
+    if (p.isCancel(selected)) {
+      p.cancel("Cancelled.");
+      return null;
+    }
+    aiProvider = selected;
   }
 
-  const database = await p.select({
-    message: "Database",
-    options: [
-      { value: "sqlite", label: DB_CONFIGS.sqlite.label },
-      { value: "postgres", label: DB_CONFIGS.postgres.label },
-    ],
-  }) as "sqlite" | "postgres";
+  let agentMode: ProjectConfig["agentMode"];
+  if (options?.agentMode) {
+    agentMode = options.agentMode;
+  } else {
+    const selected = await p.select({
+      message: "Agent mode",
+      options: [
+        { value: "skills", label: "Skills (token-efficient)", hint: "recommended" },
+        { value: "tools", label: "Tools (rich tool definitions)" },
+      ],
+    }) as "skills" | "tools";
 
-  if (p.isCancel(database)) {
-    p.cancel("Cancelled.");
-    return null;
+    if (p.isCancel(selected)) {
+      p.cancel("Cancelled.");
+      return null;
+    }
+    agentMode = selected;
   }
 
-  return { projectName, projectPath, aiProvider, database };
+  let database: ProjectConfig["database"];
+  if (options?.database || options?.skipDatabase) {
+    database = options?.database ?? "sqlite";
+  } else {
+    const selected = await p.select({
+      message: "Database",
+      options: [
+        { value: "sqlite", label: DB_CONFIGS.sqlite.label },
+        { value: "postgres", label: DB_CONFIGS.postgres.label },
+      ],
+    }) as "sqlite" | "postgres";
+
+    if (p.isCancel(selected)) {
+      p.cancel("Cancelled.");
+      return null;
+    }
+    database = selected;
+  }
+
+  return { projectName, projectPath, aiProvider, agentMode, database };
 }

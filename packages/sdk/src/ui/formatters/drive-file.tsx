@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText, Folder, Image, Film, FileSpreadsheet } from "lucide-react";
+import { FileText, Folder, Image, Film, FileSpreadsheet, ExternalLink, Users as UsersIcon } from "lucide-react";
 
 interface DriveFileData {
   id?: string;
@@ -8,6 +8,7 @@ interface DriveFileData {
   modifiedTime?: string;
   size?: string | number;
   webViewLink?: string;
+  shared?: boolean;
 }
 
 interface DriveFileFormatterProps {
@@ -27,18 +28,54 @@ function getFileIcon(mimeType?: string) {
   return FileText;
 }
 
+function formatFileSize(size: string | number | undefined): string | null {
+  if (size === undefined) return null;
+  const bytes = typeof size === "string" ? parseInt(size, 10) : size;
+  if (isNaN(bytes)) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
+  return `${(bytes / 1073741824).toFixed(1)} GB`;
+}
+
 function FileCard({ file }: { file: DriveFileData }) {
   const Icon = getFileIcon(file.mimeType);
+  const sizeStr = formatFileSize(file.size);
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-      <Icon className="h-4 w-4 text-zinc-400 shrink-0" />
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-zinc-200 truncate">{file.name || "Untitled"}</p>
-        {file.modifiedTime && (
-          <p className="text-xs text-zinc-500">
-            {new Date(file.modifiedTime).toLocaleDateString()}
-          </p>
+        <p className="text-sm text-foreground truncate">
+          {file.webViewLink ? (
+            <a href={file.webViewLink} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              {file.name || "Untitled"}
+            </a>
+          ) : (
+            file.name || "Untitled"
+          )}
+        </p>
+        <div className="flex items-center gap-2">
+          {file.modifiedTime && (
+            <span className="text-xs text-muted-foreground">
+              {new Date(file.modifiedTime).toLocaleDateString()}
+            </span>
+          )}
+          {sizeStr && (
+            <span className="text-xs text-muted-foreground">{sizeStr}</span>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {file.shared && (
+          <span title="Shared">
+            <UsersIcon className="h-3.5 w-3.5 text-muted-foreground" />
+          </span>
+        )}
+        {file.webViewLink && (
+          <a href={file.webViewLink} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         )}
       </div>
     </div>
@@ -80,7 +117,7 @@ export function DriveFileFormatter({ data }: DriveFileFormatterProps) {
   }
 
   return (
-    <pre className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-300 overflow-x-auto max-h-96 overflow-y-auto">
+    <pre className="rounded-lg border border-border bg-background p-3 text-xs text-foreground overflow-x-auto max-h-96 overflow-y-auto">
       {JSON.stringify(data, null, 2)}
     </pre>
   );

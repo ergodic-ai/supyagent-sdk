@@ -6,4 +6,12 @@ export type {
   ToolMetadata,
   OpenAITool,
   ToolsResponse,
+  SkillsOptions,
+  SkillsResult,
+  ParsedSkill,
+  ParsedSkillsDocument,
 } from "./core/types.js";
+export { createBashTool } from "./tools/bash.js";
+export type { BashToolOptions, BashToolResult } from "./tools/bash.js";
+export { parseSkillsMarkdown, buildSkillsSystemPrompt, findSkill } from "./core/skill-parser.js";
+export { createLoadSkillTool, createApiCallTool } from "./tools/skills.js";

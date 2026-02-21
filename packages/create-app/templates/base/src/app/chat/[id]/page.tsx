@@ -23,5 +23,5 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     );
   }
 
-  return <Chat chatId={id} initialMessages={initialMessages} />;
+  return <Chat key={id} chatId={id} initialMessages={initialMessages} />;
 }

@@ -32,6 +32,26 @@ export function createExecutor(
           delete remainingArgs[paramName];
         }
       }
+
+      // Fallback: LLMs often send { id } instead of { messageId }, { eventId }, etc.
+      // because list responses return objects with an `id` field.
+      // For any unresolved {fooId} param, try `id` from the args (once only).
+      if ("id" in remainingArgs && resolvedPath.includes("{")) {
+        const unresolved = resolvedPath.match(/\{(\w+)\}/g);
+        if (unresolved) {
+          for (const param of unresolved) {
+            const paramName = param.slice(1, -1);
+            if (paramName.toLowerCase().endsWith("id")) {
+              resolvedPath = resolvedPath.replace(
+                param,
+                encodeURIComponent(String(remainingArgs.id))
+              );
+              delete remainingArgs.id;
+              break; // consume `id` only once
+            }
+          }
+        }
+      }
     }
 
     let url = `${baseUrl}${resolvedPath}`;

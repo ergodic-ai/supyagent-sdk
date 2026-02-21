@@ -3,9 +3,14 @@ import type {
   SupyagentClient,
   ToolFilterOptions,
   ToolsResponse,
+  SkillsOptions,
+  SkillsResult,
+  ParsedSkillsDocument,
 } from "./types.js";
 import { TTLCache } from "./cache.js";
 import { convertTools, filterTools } from "./tool-converter.js";
+import { parseSkillsMarkdown, buildSkillsSystemPrompt } from "./skill-parser.js";
+import { createLoadSkillTool, createApiCallTool } from "../tools/skills.js";
 
 const DEFAULT_BASE_URL = "https://app.supyagent.com";
 const CACHE_KEY = "tools";
@@ -24,6 +29,7 @@ const CACHE_KEY = "tools";
 export function supyagent(options: SupyagentOptions): SupyagentClient {
   const { apiKey, baseUrl = DEFAULT_BASE_URL } = options;
   const cache = new TTLCache<ToolsResponse>();
+  const skillsCache = new TTLCache<ParsedSkillsDocument>();
 
   return {
     async tools(filterOptions?: ToolFilterOptions) {
@@ -72,6 +78,41 @@ export function supyagent(options: SupyagentOptions): SupyagentClient {
 
       // Convert to AI SDK tools
       return convertTools(filtered, toolBaseUrl, apiKey);
+    },
+
+    async skills(options?: SkillsOptions): Promise<SkillsResult> {
+      const cacheTTL = resolveCacheTTL(options?.cache);
+
+      let parsed = cacheTTL > 0 ? skillsCache.get("skills") : undefined;
+
+      if (!parsed) {
+        const res = await fetch(`${baseUrl}/api/v1/skills`, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+
+        if (!res.ok) {
+          const error = await res.text();
+          throw new Error(
+            `Supyagent API error (${res.status}): ${error}`
+          );
+        }
+
+        parsed = parseSkillsMarkdown(await res.text());
+
+        if (cacheTTL > 0) {
+          skillsCache.set("skills", parsed, cacheTTL);
+        }
+      }
+
+      return {
+        systemPrompt: buildSkillsSystemPrompt(parsed),
+        tools: {
+          loadSkill: createLoadSkillTool(parsed.skills),
+          apiCall: createApiCallTool(baseUrl, apiKey),
+        },
+      };
     },
   };
 }

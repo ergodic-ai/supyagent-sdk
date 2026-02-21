@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyTemplate } from "./template.js";
-import { AI_PROVIDERS, DB_CONFIGS, type ProjectConfig } from "./utils.js";
+import { AI_PROVIDERS, DB_CONFIGS, buildModelExpression, type ProjectConfig } from "./utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, "..", "templates");
@@ -27,7 +27,7 @@ export function scaffoldProject(config: ProjectConfig): void {
     aiProviderPackage: ai.package,
     aiProviderVersion: ai.packageVersion,
     aiProviderImport: ai.import,
-    aiModel: ai.model,
+    aiModel: buildModelExpression(aiProvider, config.model),
     aiProviderEnvKey: ai.envKey,
     dbProvider: db.provider,
     dbUrl: db.url,
@@ -40,8 +40,8 @@ export function scaffoldProject(config: ProjectConfig): void {
   writeProject(projectPath, "tsconfig.json", readTemplate("base/tsconfig.json"));
   writeProject(projectPath, "tailwind.config.ts", readTemplate("base/tailwind.config.ts"));
   writeProject(projectPath, "postcss.config.js", readTemplate("base/postcss.config.js"));
-  writeProject(projectPath, ".gitignore", readTemplate("base/.gitignore"));
-  writeProject(projectPath, ".npmrc", readTemplate("base/.npmrc"));
+  writeProject(projectPath, ".gitignore", readTemplate("base/gitignore"));
+  writeProject(projectPath, ".npmrc", readTemplate("base/npmrc"));
   writeProject(projectPath, "README.md", applyTemplate(readTemplate("base/README.md.tmpl"), vars));
 
   // ── Source files ──
@@ -51,11 +51,14 @@ export function scaffoldProject(config: ProjectConfig): void {
   writeProject(projectPath, "src/app/chat/page.tsx", readTemplate("base/src/app/chat/page.tsx"));
   writeProject(projectPath, "src/app/chat/[id]/page.tsx", readTemplate("base/src/app/chat/[id]/page.tsx"));
 
-  // API routes
+  // API routes — use skills or tools template based on agentMode
+  const routeTemplate = config.agentMode === "skills"
+    ? "api-route/route.skills.ts.tmpl"
+    : "api-route/route.tools.ts.tmpl";
   writeProject(
     projectPath,
     "src/app/api/chat/route.ts",
-    applyTemplate(readTemplate("api-route/route.ts.tmpl"), vars)
+    applyTemplate(readTemplate(routeTemplate), vars)
   );
   writeProject(projectPath, "src/app/api/chats/route.ts", readTemplate("base/src/app/api/chats/route.ts"));
   writeProject(projectPath, "src/app/api/chats/[id]/route.ts", readTemplate("base/src/app/api/chats/[id]/route.ts"));
@@ -65,6 +68,29 @@ export function scaffoldProject(config: ProjectConfig): void {
   writeProject(projectPath, "src/components/chat-sidebar.tsx", readTemplate("base/src/components/chat-sidebar.tsx"));
   writeProject(projectPath, "src/components/chat-message.tsx", readTemplate("base/src/components/chat-message.tsx"));
   writeProject(projectPath, "src/components/chat-input.tsx", readTemplate("base/src/components/chat-input.tsx"));
+
+  // UI primitives (shadcn-style)
+  writeProject(projectPath, "src/components/ui/badge.tsx", readTemplate("base/src/components/ui/badge.tsx"));
+  writeProject(projectPath, "src/components/ui/collapsible.tsx", readTemplate("base/src/components/ui/collapsible.tsx"));
+
+  // AI Elements (pre-bundled Tool component)
+  writeProject(projectPath, "src/components/ai-elements/tool.tsx", readTemplate("base/src/components/ai-elements/tool.tsx"));
+
+  // Supyagent tool rendering (local, editable)
+  writeProject(projectPath, "src/components/supyagent/tool-message.tsx", readTemplate("base/src/components/supyagent/tool-message.tsx"));
+  writeProject(projectPath, "src/components/supyagent/tool-renderers.tsx", readTemplate("base/src/components/supyagent/tool-renderers.tsx"));
+
+  // Tool renderers — one per integration
+  const toolRenderers = [
+    "gmail", "calendar", "slack", "github", "drive", "search", "docs",
+    "sheets", "slides", "hubspot", "linear", "pipedrive", "compute",
+    "resend", "inbox", "discord", "notion", "twitter", "telegram",
+    "stripe", "jira", "salesforce", "brevo", "calendly", "twilio",
+    "linkedin", "bash", "image", "audio", "video", "generic",
+  ];
+  for (const tool of toolRenderers) {
+    writeProject(projectPath, `src/components/supyagent/tools/${tool}.tsx`, readTemplate(`base/src/components/supyagent/tools/${tool}.tsx`));
+  }
 
   // Lib
   writeProject(projectPath, "src/lib/utils.ts", readTemplate("base/src/lib/utils.ts"));

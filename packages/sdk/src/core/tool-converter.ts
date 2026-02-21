@@ -19,8 +19,8 @@ export function convertTools(
 
     result[name] = tool({
       description,
-      parameters: jsonSchema(parameters as Parameters<typeof jsonSchema>[0]),
-      execute: createExecutor(metadata, baseUrl, apiKey),
+      inputSchema: jsonSchema(parameters as Parameters<typeof jsonSchema>[0]),
+      execute: async (args) => createExecutor(metadata, baseUrl, apiKey)(args as Record<string, unknown>),
     });
   }
 
