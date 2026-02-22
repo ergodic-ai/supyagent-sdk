@@ -86,7 +86,8 @@ export function scaffoldProject(config: ProjectConfig): void {
     "sheets", "slides", "hubspot", "linear", "pipedrive", "compute",
     "resend", "inbox", "discord", "notion", "twitter", "telegram",
     "stripe", "jira", "salesforce", "brevo", "calendly", "twilio",
-    "linkedin", "bash", "image", "audio", "video", "generic",
+    "linkedin", "bash", "image", "audio", "video", "whatsapp",
+    "browser", "view-image", "generic",
   ];
   for (const tool of toolRenderers) {
     writeProject(projectPath, `src/components/supyagent/tools/${tool}.tsx`, readTemplate(`base/src/components/supyagent/tools/${tool}.tsx`));

@@ -29,6 +29,9 @@ import { BrevoFormatter } from "./formatters/brevo.js";
 import { CalendlyFormatter } from "./formatters/calendly.js";
 import { TwilioFormatter } from "./formatters/twilio.js";
 import { LinkedInFormatter } from "./formatters/linkedin.js";
+import { WhatsAppFormatter } from "./formatters/whatsapp.js";
+import { BrowserFormatter } from "./formatters/browser.js";
+import { ViewImageFormatter } from "./formatters/view-image.js";
 import { GenericFormatter } from "./formatters/generic.js";
 
 export interface ToolResultPart {
@@ -182,6 +185,12 @@ export function renderFormatter(formatterType: FormatterType, data: unknown): Re
       return <TwilioFormatter data={data} />;
     case "linkedin":
       return <LinkedInFormatter data={data} />;
+    case "whatsapp":
+      return <WhatsAppFormatter data={data} />;
+    case "browser":
+      return <BrowserFormatter data={data} />;
+    case "viewImage":
+      return <ViewImageFormatter data={data} />;
     default:
       return <GenericFormatter data={data} />;
   }

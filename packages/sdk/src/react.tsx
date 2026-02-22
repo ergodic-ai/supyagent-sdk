@@ -72,3 +72,6 @@ export { BrevoFormatter } from "./ui/formatters/brevo.js";
 export { CalendlyFormatter } from "./ui/formatters/calendly.js";
 export { TwilioFormatter } from "./ui/formatters/twilio.js";
 export { LinkedInFormatter } from "./ui/formatters/linkedin.js";
+export { WhatsAppFormatter } from "./ui/formatters/whatsapp.js";
+export { BrowserFormatter } from "./ui/formatters/browser.js";
+export { ViewImageFormatter } from "./ui/formatters/view-image.js";

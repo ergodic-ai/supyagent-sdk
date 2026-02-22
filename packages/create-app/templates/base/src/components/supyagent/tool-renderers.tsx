@@ -29,6 +29,9 @@ import { BashRenderer } from "./tools/bash";
 import { ImageRenderer } from "./tools/image";
 import { AudioRenderer } from "./tools/audio";
 import { VideoRenderer } from "./tools/video";
+import { WhatsAppRenderer } from "./tools/whatsapp";
+import { BrowserRenderer } from "./tools/browser";
+import { ViewImageRenderer } from "./tools/view-image";
 import { GenericRenderer } from "./tools/generic";
 
 export interface ToolRendererProps {
@@ -70,6 +73,9 @@ const renderers: Record<string, ComponentType<ToolRendererProps>> = {
   image: ImageRenderer,
   audio: AudioRenderer,
   video: VideoRenderer,
+  whatsapp: WhatsAppRenderer,
+  browser: BrowserRenderer,
+  viewImage: ViewImageRenderer,
 };
 
 export function getToolRenderer(formatterType: string): ComponentType<ToolRendererProps> {

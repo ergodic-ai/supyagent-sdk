@@ -410,6 +410,58 @@ export function getVideoSummary(data: unknown, toolName: string): SummaryResult 
   return { text: isUnderstand ? "Video analysis" : "Video generation" };
 }
 
+export function getWhatsappSummary(data: unknown, toolName: string): SummaryResult {
+  const action = actionFromToolName(toolName);
+  if (action === "send") {
+    const to = typeof data === "object" && data !== null && "to" in data
+      ? String((data as any).to) : undefined;
+    return { text: to ? `Sent message to ${to}` : "Sent message", badge: { text: "Sent", variant: "success" } };
+  }
+  const n = countItems(data, "messages");
+  if (n > 0) return { text: `${n} messages`, badge: countBadge(n) };
+  if (typeof data === "object" && data !== null && "body" in data) {
+    const body = String((data as any).body);
+    return { text: body.length > 60 ? body.slice(0, 60) + "..." : body };
+  }
+  return { text: "WhatsApp result" };
+}
+
+export function getBrowserSummary(data: unknown, toolName: string): SummaryResult {
+  if (typeof data === "object" && data !== null) {
+    const d = data as Record<string, unknown>;
+    if (d.url && typeof d.url === "string") {
+      try {
+        const hostname = new URL(d.url).hostname.replace("www.", "");
+        return { text: `Visited ${hostname}` };
+      } catch {
+        return { text: `Visited ${d.url}` };
+      }
+    }
+    if (d.screenshot_url || d.screenshot) {
+      return { text: "Page screenshot captured" };
+    }
+    if (d.content || d.text || d.markdown) {
+      return { text: "Page content extracted" };
+    }
+  }
+  return { text: humanizeToolName(toolName) };
+}
+
+export function getViewImageSummary(data: unknown): SummaryResult {
+  if (typeof data === "object" && data !== null) {
+    const d = data as Record<string, unknown>;
+    if (d.url && typeof d.url === "string") {
+      try {
+        const hostname = new URL(d.url).hostname.replace("www.", "");
+        return { text: `Image from ${hostname}` };
+      } catch {
+        return { text: "Image displayed" };
+      }
+    }
+  }
+  return { text: "Image displayed" };
+}
+
 export function getBashSummary(data: unknown): SummaryResult {
   if (typeof data !== "object" || data === null) return { text: "Command executed" };
   const d = data as Record<string, unknown>;
@@ -456,6 +508,9 @@ export const SUMMARY_MAP: Record<string, SummaryFn> = {
   image: getImageSummary,
   audio: getAudioSummary,
   video: getVideoSummary,
+  whatsapp: getWhatsappSummary,
+  browser: getBrowserSummary,
+  viewImage: getViewImageSummary,
   bash: getBashSummary,
   generic: getGenericSummary,
 };

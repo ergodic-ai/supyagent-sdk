@@ -25,6 +25,8 @@ import {
   MessageCircle,
   UserCircle,
   Monitor,
+  Globe,
+  Image,
 } from "lucide-react";
 import { getProviderFromToolName } from "./utils.js";
 
@@ -58,6 +60,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   outlook: Mail,
   onedrive: HardDrive,
   telegram: Send,
+  whatsapp: MessageCircle,
+  browser: Globe,
+  viewImage: Image,
 };
 
 interface ProviderIconProps {

@@ -16,6 +16,7 @@ import {
   maybeNormalize,
   getFormatterType,
   getSummary,
+  resolveToolName,
   ProviderIcon,
   humanizeToolName,
   getProviderLabel,
@@ -30,9 +31,10 @@ interface ToolMessageProps {
 }
 
 export function ToolMessage({ part, addToolApprovalResponse }: ToolMessageProps) {
-  const toolName = extractToolName(part);
+  const rawToolName = extractToolName(part);
   const state = extractState(part);
   const args = extractArgs(part);
+  const toolName = resolveToolName(rawToolName, args);
 
   const toolState = resolveState(state);
   const isDone = toolState === "output-available";

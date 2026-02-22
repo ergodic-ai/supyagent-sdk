@@ -416,6 +416,94 @@ const MOCK_SCENARIOS: Array<{ label: string; toolName: string; args?: Record<str
     args: { image_url: "https://example.com/receipt.jpg" },
     data: { text: "ACME GROCERY\n123 Main Street\nAnytown, USA 12345\n\nMilk 2%          $3.99\nBread Wheat      $4.49\nEggs Large       $5.29\nApples (3lb)     $6.99\n\nSubtotal        $20.76\nTax (8%)         $1.66\nTotal           $22.42\n\nVISA **** 4242\nThank you!", tokens_used: 312 },
   },
+  // ── WhatsApp ──
+  {
+    label: "WhatsApp - Messages",
+    toolName: "whatsapp_messages",
+    data: {
+      messages: [
+        { id: "wamid_1", from: "+5511999887766", body: "Hi! Is the order ready for pickup?", timestamp: Math.floor(Date.now() / 1000) - 1800, type: "text", contact_name: "Maria Silva", status: "read" },
+        { id: "wamid_2", from: "+5511999887766", body: "Great, I'll be there in 20 minutes.", timestamp: Math.floor(Date.now() / 1000) - 900, type: "text", contact_name: "Maria Silva", status: "delivered" },
+        { id: "wamid_3", from: "+14155551234", body: "Can you send me the latest invoice?", timestamp: Math.floor(Date.now() / 1000) - 7200, type: "text", profile_name: "John Davis" },
+      ],
+    },
+  },
+  {
+    label: "WhatsApp - Send message",
+    toolName: "whatsapp_send_message",
+    data: { id: "wamid_4", from: "+15551234567", to: "+5511999887766", body: "Your order #4521 is ready for pickup!", timestamp: Math.floor(Date.now() / 1000), type: "text", status: "sent" },
+  },
+  // ── Browser ──
+  {
+    label: "Browser - Visit page",
+    toolName: "browser_visit",
+    data: {
+      url: "https://docs.supyagent.com/getting-started",
+      title: "Getting Started - Supyagent Documentation",
+      status: 200,
+      content: "# Getting Started\n\nWelcome to Supyagent! This guide will walk you through setting up your first AI agent.\n\n## Installation\n\n```bash\nnpx create-supyagent-app my-agent\ncd my-agent\npnpm install\n```\n\n## Configuration\n\nCreate a `.env.local` file with your API keys...\n\n## Your First Agent\n\nThe default template includes a chat interface with tool calling support.",
+      links: [
+        { text: "API Reference", href: "https://docs.supyagent.com/api" },
+        { text: "GitHub Repository", href: "https://github.com/supyagent/sdk" },
+        { text: "Examples", href: "https://docs.supyagent.com/examples" },
+      ],
+    },
+  },
+  {
+    label: "Browser - Screenshot",
+    toolName: "browser_snapshot",
+    data: {
+      url: "https://supyagent.com",
+      title: "Supyagent — AI Agent Platform",
+      status: 200,
+      screenshot_url: "/media/generated-grid.jpeg",
+    },
+  },
+  {
+    label: "Browser - Error page",
+    toolName: "browser_visit",
+    data: {
+      url: "https://example.com/api/deprecated",
+      title: "404 Not Found",
+      status: 404,
+      content: "The requested resource could not be found.",
+    },
+  },
+  // ── Route-mapped providers (via apiCall) ──
+  {
+    label: "Database (→ Compute)",
+    toolName: "apiCall",
+    args: { path: "/api/v1/db/query", method: "POST", body: { sql: "SELECT * FROM users LIMIT 5" } },
+    data: { stdout: "id | name       | email\n1  | Alice      | alice@example.com\n2  | Bob        | bob@example.com\n3  | Charlie    | charlie@example.com\n4  | Dana       | dana@example.com\n5  | Eve        | eve@example.com\n\n5 rows returned", exit_code: 0, duration_ms: 42 },
+  },
+  {
+    label: "Files (→ Drive)",
+    toolName: "apiCall",
+    args: { path: "/api/v1/files/upload", method: "POST" },
+    data: {
+      files: [
+        { id: "f_1", name: "report-2025-q4.pdf", mimeType: "application/pdf", modifiedTime: new Date(Date.now() - 60000).toISOString(), size: 1245678 },
+      ],
+    },
+  },
+  {
+    label: "Radar (→ Search)",
+    toolName: "apiCall",
+    args: { path: "/api/v1/radar", method: "GET" },
+    data: {
+      results: [
+        { title: "AI Agent Market Report 2025", url: "https://research.example.com/ai-agents-2025", snippet: "The AI agent market is projected to reach $47B by 2027, driven by enterprise adoption of autonomous workflows..." },
+        { title: "Competitor Analysis: AgentKit vs Supyagent", url: "https://techblog.example.com/comparison", snippet: "A detailed comparison of the two leading AI agent frameworks for tool-rich applications..." },
+      ],
+    },
+  },
+  // ── View Image ──
+  {
+    label: "View Image - URL",
+    toolName: "viewImage",
+    args: { url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800" },
+    data: { url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800", displayed: true },
+  },
   {
     label: "Generic - Unknown tool",
     toolName: "custom_unknown_tool",

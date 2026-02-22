@@ -55,6 +55,13 @@ export const PROVIDER_LABELS: Record<string, string> = {
   image: "Image",
   audio: "Audio",
   video: "Video",
+  shopify: "Shopify",
+  sap: "SAP",
+  jobs: "Jobs",
+  browser: "Browser",
+  files: "Files",
+  db: "Database",
+  radar: "Radar",
 };
 
 /**
@@ -98,6 +105,9 @@ export type FormatterType =
   | "image"
   | "audio"
   | "video"
+  | "whatsapp"
+  | "browser"
+  | "viewImage"
   | "generic";
 
 /**
@@ -173,6 +183,18 @@ export function getFormatterType(toolName: string): FormatterType {
       return "twilio";
     case "linkedin":
       return "linkedin";
+    case "whatsapp":
+      return "whatsapp";
+    case "browser":
+      return "browser";
+    case "viewImage":
+      return "viewImage";
+    case "db":
+      return "compute";
+    case "files":
+      return "drive";
+    case "radar":
+      return "search";
     case "image":
       return "image";
     case "tts":

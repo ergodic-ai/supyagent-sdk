@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses, type UIMessage } from "ai";
+import { DefaultChatTransport, isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, type UIMessage } from "ai";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatSidebar } from "./chat-sidebar";
@@ -23,7 +23,7 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
     [chatId]
   );
 
-  const { messages, sendMessage, status, stop, addToolApprovalResponse } = useChat({
+  const { messages, sendMessage, status, stop, addToolApprovalResponse, setMessages } = useChat({
     id: chatId,
     transport,
     messages: initialMessages,
@@ -31,6 +31,39 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
   });
 
   const isLoading = status === "submitted" || status === "streaming";
+
+  // viewImage: inject images as FileUIPart messages so the model can see them
+  const processedImageCallsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (status !== "ready") return;
+
+    const newImageMessages: UIMessage[] = [];
+
+    for (const msg of messages) {
+      for (const part of msg.parts) {
+        if (!isToolUIPart(part)) continue;
+        const inv = (part as any).toolInvocation;
+        if (!inv || inv.toolName !== "viewImage") continue;
+        if (inv.state !== "result" && inv.state !== "output-available") continue;
+        if (processedImageCallsRef.current.has(inv.toolCallId)) continue;
+
+        const url = inv.args?.url ?? inv.input?.url;
+        if (!url) continue;
+
+        processedImageCallsRef.current.add(inv.toolCallId);
+        newImageMessages.push({
+          id: `image-${inv.toolCallId}`,
+          role: "assistant",
+          parts: [{ type: "file" as const, mediaType: "image/jpeg", url }],
+        } as UIMessage);
+      }
+    }
+
+    if (newImageMessages.length > 0) {
+      setMessages((prev) => [...prev, ...newImageMessages]);
+    }
+  }, [messages, status, setMessages]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);

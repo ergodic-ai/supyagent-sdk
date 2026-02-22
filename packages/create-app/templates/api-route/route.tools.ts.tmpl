@@ -1,6 +1,6 @@
 import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from 'ai';
 {{aiProviderImport}};
-import { supyagent, createBashTool } from '@supyagent/sdk';
+import { supyagent, createBashTool, createViewImageTool } from '@supyagent/sdk';
 import { createPrismaAdapter } from '@supyagent/sdk/prisma';
 import { prisma } from '@/lib/prisma';
 
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   await adapter.saveChat(chatId, messages as any);
 
   const supyagentTools = await client.tools({ cache: 300 });
-  const tools = { ...supyagentTools, bash: createBashTool() };
+  const tools = { ...supyagentTools, bash: createBashTool(), viewImage: createViewImageTool() };
 
   const result = streamText({
     model: {{aiModel}},
