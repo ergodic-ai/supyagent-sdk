@@ -1,12 +1,14 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, type UIMessage } from "ai";
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses, type UIMessage } from "ai";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatSidebar } from "./chat-sidebar";
 import { useRef, useEffect, useMemo, useState, useCallback } from "react";
-import { MessageSquare, ArrowDown } from "lucide-react";
+import { ArrowDown } from "lucide-react";
+import { Header } from "./header";
+import Image from "next/image";
 
 interface ChatProps {
   chatId: string;
@@ -23,7 +25,7 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
     [chatId]
   );
 
-  const { messages, sendMessage, status, stop, addToolApprovalResponse, setMessages } = useChat({
+  const { messages, sendMessage, status, stop, addToolApprovalResponse } = useChat({
     id: chatId,
     transport,
     messages: initialMessages,
@@ -32,38 +34,6 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
 
   const isLoading = status === "submitted" || status === "streaming";
 
-  // viewImage: inject images as FileUIPart messages so the model can see them
-  const processedImageCallsRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (status !== "ready") return;
-
-    const newImageMessages: UIMessage[] = [];
-
-    for (const msg of messages) {
-      for (const part of msg.parts) {
-        if (!isToolUIPart(part)) continue;
-        const inv = (part as any).toolInvocation;
-        if (!inv || inv.toolName !== "viewImage") continue;
-        if (inv.state !== "result" && inv.state !== "output-available") continue;
-        if (processedImageCallsRef.current.has(inv.toolCallId)) continue;
-
-        const url = inv.args?.url ?? inv.input?.url;
-        if (!url) continue;
-
-        processedImageCallsRef.current.add(inv.toolCallId);
-        newImageMessages.push({
-          id: `image-${inv.toolCallId}`,
-          role: "assistant",
-          parts: [{ type: "file" as const, mediaType: "image/jpeg", url }],
-        } as UIMessage);
-      }
-    }
-
-    if (newImageMessages.length > 0) {
-      setMessages((prev) => [...prev, ...newImageMessages]);
-    }
-  }, [messages, status, setMessages]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -99,7 +69,9 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
   ];
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen flex-col">
+      <Header />
+      <div className="flex flex-1 min-h-0">
       <ChatSidebar currentChatId={chatId} />
 
       <div className="flex flex-1 flex-col relative">
@@ -112,7 +84,7 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
               <div className="flex h-full min-h-[60vh] items-center justify-center">
                 <div className="text-center max-w-md">
                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-                    <MessageSquare className="h-6 w-6 text-muted-foreground" />
+                    <Image src="/logo.png" alt="Supyagent" width={24} height={24} className="opacity-70" />
                   </div>
                   <h1 className="text-xl font-semibold text-foreground">
                     Supyagent Chat
@@ -163,6 +135,7 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
             />
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

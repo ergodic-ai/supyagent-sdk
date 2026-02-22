@@ -6,6 +6,8 @@ import type {
   SkillsOptions,
   SkillsResult,
   ParsedSkillsDocument,
+  MeOptions,
+  MeResponse,
 } from "./types.js";
 import { TTLCache } from "./cache.js";
 import { convertTools, filterTools } from "./tool-converter.js";
@@ -30,6 +32,7 @@ export function supyagent(options: SupyagentOptions): SupyagentClient {
   const { apiKey, baseUrl = DEFAULT_BASE_URL } = options;
   const cache = new TTLCache<ToolsResponse>();
   const skillsCache = new TTLCache<ParsedSkillsDocument>();
+  const meCache = new TTLCache<MeResponse>();
 
   return {
     async tools(filterOptions?: ToolFilterOptions) {
@@ -113,6 +116,36 @@ export function supyagent(options: SupyagentOptions): SupyagentClient {
           apiCall: createApiCallTool(baseUrl, apiKey),
         },
       };
+    },
+
+    async me(options?: MeOptions): Promise<MeResponse> {
+      const cacheTTL = resolveCacheTTL(options?.cache);
+
+      let response = cacheTTL > 0 ? meCache.get("me") : undefined;
+
+      if (!response) {
+        const res = await fetch(`${baseUrl}/api/v1/me`, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+
+        if (!res.ok) {
+          const error = await res.text();
+          throw new Error(
+            `Supyagent API error (${res.status}): ${error}`
+          );
+        }
+
+        const json = await res.json();
+        response = (json.data ?? json) as MeResponse;
+
+        if (cacheTTL > 0) {
+          meCache.set("me", response, cacheTTL);
+        }
+      }
+
+      return response;
     },
   };
 }

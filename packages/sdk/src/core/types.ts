@@ -66,6 +66,28 @@ export interface ParsedSkillsDocument {
   skills: ParsedSkill[];
 }
 
+/** Options for the me() method */
+export interface MeOptions {
+  /** Cache TTL in seconds. true = 60s, number = custom TTL, false/undefined = no cache */
+  cache?: boolean | number;
+}
+
+/** Response shape from GET /api/v1/me */
+export interface MeResponse {
+  email: string | null;
+  tier: string;
+  usage: {
+    current: number;
+    /** -1 means unlimited (enterprise) */
+    limit: number;
+  };
+  integrations: Array<{
+    provider: string;
+    status: string;
+  }>;
+  dashboardUrl: string;
+}
+
 /** Options for the skills() method */
 export interface SkillsOptions {
   /** Cache TTL in seconds. true = 60s, number = custom TTL, false/undefined = no cache */
@@ -84,4 +106,5 @@ export interface SkillsResult {
 export interface SupyagentClient {
   tools(options?: ToolFilterOptions): Promise<Record<string, import("ai").Tool>>;
   skills(options?: SkillsOptions): Promise<SkillsResult>;
+  me(options?: MeOptions): Promise<MeResponse>;
 }

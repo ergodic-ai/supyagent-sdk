@@ -32,6 +32,7 @@ import { VideoRenderer } from "./tools/video";
 import { WhatsAppRenderer } from "./tools/whatsapp";
 import { BrowserRenderer } from "./tools/browser";
 import { ViewImageRenderer } from "./tools/view-image";
+import { JobsRenderer } from "./tools/jobs";
 import { GenericRenderer } from "./tools/generic";
 
 export interface ToolRendererProps {
@@ -76,6 +77,7 @@ const renderers: Record<string, ComponentType<ToolRendererProps>> = {
   whatsapp: WhatsAppRenderer,
   browser: BrowserRenderer,
   viewImage: ViewImageRenderer,
+  jobs: JobsRenderer,
 };
 
 export function getToolRenderer(formatterType: string): ComponentType<ToolRendererProps> {

@@ -21,6 +21,31 @@ export async function POST(req: Request) {
     messages: await convertToModelMessages(messages),
     tools,
     stopWhen: stepCountIs(5),
+    prepareStep: async ({ steps, messages: stepMessages }) => {
+      const imageUrls: string[] = [];
+      for (const step of steps) {
+        for (const call of step.toolCalls) {
+          if (call.toolName === 'viewImage' && call.input?.url) {
+            imageUrls.push(call.input.url as string);
+          }
+        }
+      }
+      if (imageUrls.length === 0) return undefined;
+
+      return {
+        messages: [
+          ...stepMessages,
+          {
+            role: 'user' as const,
+            content: imageUrls.map(url => ({
+              type: 'file' as const,
+              data: new URL(url),
+              mediaType: 'image/jpeg',
+            })),
+          },
+        ],
+      };
+    },
   });
 
   return result.toUIMessageStreamResponse({

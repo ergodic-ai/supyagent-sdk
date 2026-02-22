@@ -101,10 +101,6 @@ export function ChatMessage({ message, addToolApprovalResponse }: ChatMessagePro
           }
 
           if (isToolUIPart(part)) {
-            const inv = (part as any).toolInvocation;
-            if (inv?.toolName === "viewImage") {
-              return null;
-            }
             return <ToolMessage key={i} part={part} addToolApprovalResponse={addToolApprovalResponse} />;
           }
 

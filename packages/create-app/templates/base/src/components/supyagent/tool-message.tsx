@@ -24,6 +24,9 @@ import {
   ToolInput,
 } from "@supyagent/sdk/react";
 import { getToolRenderer } from "./tool-renderers";
+import { useJobPolling } from "@/hooks/use-job-polling";
+
+const POLLABLE_TYPES = new Set(["image", "video", "audio"]);
 
 interface ToolMessageProps {
   part: any; // ToolInvocationUIPart from AI SDK
@@ -42,21 +45,30 @@ export function ToolMessage({ part, addToolApprovalResponse }: ToolMessageProps)
   const isApprovalRequested = toolState === "approval-requested";
   const isDenied = toolState === "output-denied";
 
-  // Extract and format result data
+  // Extract result data unconditionally (before hook call)
+  const result = (isDone || isError) ? extractResult(part) : undefined;
+  const formatterType = result !== undefined ? getFormatterType(toolName) : undefined;
+  const rawData = (result !== undefined && formatterType)
+    ? maybeNormalize(toolName, formatterType, result) as Record<string, unknown> | undefined
+    : undefined;
+
+  // Hook is always called (rules of hooks), but only activates for pollable types
+  const { data: polledData } = useJobPolling({
+    initialData: rawData,
+    enabled: !!formatterType && POLLABLE_TYPES.has(formatterType),
+    formatterType,
+  });
+
+  // Compute summary and rendered output from (possibly polled) data
   let renderedOutput: ReactNode = null;
   let summary: string | undefined;
 
-  if (isDone || isError) {
-    const result = extractResult(part);
-    if (result !== undefined) {
-      const formatterType = getFormatterType(toolName);
-      const data = maybeNormalize(toolName, formatterType, result);
-      const summaryResult = getSummary(formatterType, data, toolName);
-      summary = summaryResult.text;
+  if ((isDone || isError) && polledData !== undefined && formatterType) {
+    const summaryResult = getSummary(formatterType, polledData, toolName);
+    summary = summaryResult.text;
 
-      const Renderer = getToolRenderer(formatterType);
-      renderedOutput = <Renderer data={data} />;
-    }
+    const Renderer = getToolRenderer(formatterType);
+    renderedOutput = <Renderer data={polledData} />;
   }
 
   const provider = getProviderFromToolName(toolName);

@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, copyFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyTemplate } from "./template.js";
@@ -15,6 +15,13 @@ function writeProject(projectPath: string, relativePath: string, content: string
   const fullPath = join(projectPath, relativePath);
   mkdirSync(dirname(fullPath), { recursive: true });
   writeFileSync(fullPath, content, "utf-8");
+}
+
+function copyBinary(projectPath: string, relativePath: string, templateRelativePath: string): void {
+  const src = join(TEMPLATES_DIR, templateRelativePath);
+  const dest = join(projectPath, relativePath);
+  mkdirSync(dirname(dest), { recursive: true });
+  copyFileSync(src, dest);
 }
 
 export function scaffoldProject(config: ProjectConfig): void {
@@ -62,12 +69,19 @@ export function scaffoldProject(config: ProjectConfig): void {
   );
   writeProject(projectPath, "src/app/api/chats/route.ts", readTemplate("base/src/app/api/chats/route.ts"));
   writeProject(projectPath, "src/app/api/chats/[id]/route.ts", readTemplate("base/src/app/api/chats/[id]/route.ts"));
+  writeProject(projectPath, "src/app/api/jobs/[id]/route.ts", readTemplate("base/src/app/api/jobs/[id]/route.ts"));
+  writeProject(projectPath, "src/app/api/me/route.ts", readTemplate("base/src/app/api/me/route.ts"));
+
+  // Hooks
+  writeProject(projectPath, "src/hooks/use-job-polling.ts", readTemplate("base/src/hooks/use-job-polling.ts"));
 
   // Components
   writeProject(projectPath, "src/components/chat.tsx", readTemplate("base/src/components/chat.tsx"));
   writeProject(projectPath, "src/components/chat-sidebar.tsx", readTemplate("base/src/components/chat-sidebar.tsx"));
   writeProject(projectPath, "src/components/chat-message.tsx", readTemplate("base/src/components/chat-message.tsx"));
   writeProject(projectPath, "src/components/chat-input.tsx", readTemplate("base/src/components/chat-input.tsx"));
+  writeProject(projectPath, "src/components/header.tsx", readTemplate("base/src/components/header.tsx"));
+  writeProject(projectPath, "src/components/user-button.tsx", readTemplate("base/src/components/user-button.tsx"));
 
   // UI primitives (shadcn-style)
   writeProject(projectPath, "src/components/ui/badge.tsx", readTemplate("base/src/components/ui/badge.tsx"));
@@ -87,7 +101,7 @@ export function scaffoldProject(config: ProjectConfig): void {
     "resend", "inbox", "discord", "notion", "twitter", "telegram",
     "stripe", "jira", "salesforce", "brevo", "calendly", "twilio",
     "linkedin", "bash", "image", "audio", "video", "whatsapp",
-    "browser", "view-image", "generic",
+    "browser", "view-image", "jobs", "generic",
   ];
   for (const tool of toolRenderers) {
     writeProject(projectPath, `src/components/supyagent/tools/${tool}.tsx`, readTemplate(`base/src/components/supyagent/tools/${tool}.tsx`));
@@ -96,6 +110,10 @@ export function scaffoldProject(config: ProjectConfig): void {
   // Lib
   writeProject(projectPath, "src/lib/utils.ts", readTemplate("base/src/lib/utils.ts"));
   writeProject(projectPath, "src/lib/prisma.ts", readTemplate("base/src/lib/prisma.ts"));
+
+  // ── Branding assets ──
+  copyBinary(projectPath, "public/logo.png", "base/public/logo.png");
+  copyBinary(projectPath, "src/app/icon.png", "base/public/logo.png");
 
   // ── Prisma schema ──
   writeProject(

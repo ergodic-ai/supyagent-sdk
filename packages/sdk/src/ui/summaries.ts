@@ -472,6 +472,45 @@ export function getBashSummary(data: unknown): SummaryResult {
   return { text: `Command failed`, badge: { text: `exit ${exitCode}`, variant: "error" } };
 }
 
+export function getJobsSummary(data: unknown): SummaryResult {
+  if (typeof data !== "object" || data === null) return { text: "Job status" };
+  const d = data as Record<string, unknown>;
+
+  const service = typeof d.service === "string" ? d.service : "";
+  const action = typeof d.action === "string" ? d.action : "";
+  const label = service
+    ? `${service.charAt(0).toUpperCase() + service.slice(1)}${action ? ` ${action}` : ""}`
+    : "Job";
+
+  if (d.status === "processing") {
+    return { text: `Checking ${label.toLowerCase()}...`, badge: { text: "processing", variant: "warning" } };
+  }
+  if (d.status === "completed") {
+    const elapsed = formatElapsed(d.created_at, d.completed_at);
+    return { text: elapsed ? `${label} completed in ${elapsed}` : `${label} completed`, badge: { text: "done", variant: "success" } };
+  }
+  if (d.status === "failed" || d.error) {
+    return { text: `${label} failed`, badge: { text: "failed", variant: "error" } };
+  }
+
+  return { text: `${label} status` };
+}
+
+function formatElapsed(
+  start: unknown,
+  end: unknown
+): string | undefined {
+  if (typeof start !== "string") return undefined;
+  const s = new Date(start).getTime();
+  const e = typeof end === "string" ? new Date(end).getTime() : Date.now();
+  if (isNaN(s) || isNaN(e)) return undefined;
+  const sec = Math.round((e - s) / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  const rem = sec % 60;
+  return rem > 0 ? `${min}m ${rem}s` : `${min}m`;
+}
+
 export function getGenericSummary(_data: unknown, toolName: string): SummaryResult {
   return { text: humanizeToolName(toolName) };
 }
@@ -512,6 +551,7 @@ export const SUMMARY_MAP: Record<string, SummaryFn> = {
   browser: getBrowserSummary,
   viewImage: getViewImageSummary,
   bash: getBashSummary,
+  jobs: getJobsSummary,
   generic: getGenericSummary,
 };
 

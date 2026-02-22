@@ -10,6 +10,8 @@ export type {
   SkillsResult,
   ParsedSkill,
   ParsedSkillsDocument,
+  MeOptions,
+  MeResponse,
 } from "./core/types.js";
 export { createBashTool } from "./tools/bash.js";
 export type { BashToolOptions, BashToolResult } from "./tools/bash.js";

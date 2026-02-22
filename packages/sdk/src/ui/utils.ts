@@ -108,6 +108,7 @@ export type FormatterType =
   | "whatsapp"
   | "browser"
   | "viewImage"
+  | "jobs"
   | "generic";
 
 /**
@@ -195,6 +196,8 @@ export function getFormatterType(toolName: string): FormatterType {
       return "drive";
     case "radar":
       return "search";
+    case "jobs":
+      return "jobs";
     case "image":
       return "image";
     case "tts":
@@ -233,5 +236,12 @@ export function resolveToolName(
   // Convert path segments to underscore-separated tool name
   // e.g. "gmail/messages" → "gmail_messages"
   // e.g. "microsoft/mail/messages" → "microsoft_mail_messages"
-  return stripped.split("/").filter(Boolean).join("_");
+  const segments = stripped.split("/").filter(Boolean);
+
+  // Normalize job polling paths: "jobs/{uuid}" → "jobs_status"
+  if (segments[0] === "jobs" && segments.length === 2) {
+    return "jobs_status";
+  }
+
+  return segments.join("_");
 }
