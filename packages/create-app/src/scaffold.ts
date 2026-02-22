@@ -82,6 +82,8 @@ export function scaffoldProject(config: ProjectConfig): void {
   writeProject(projectPath, "src/components/chat-input.tsx", readTemplate("base/src/components/chat-input.tsx"));
   writeProject(projectPath, "src/components/header.tsx", readTemplate("base/src/components/header.tsx"));
   writeProject(projectPath, "src/components/user-button.tsx", readTemplate("base/src/components/user-button.tsx"));
+  writeProject(projectPath, "src/components/theme-provider.tsx", readTemplate("base/src/components/theme-provider.tsx"));
+  writeProject(projectPath, "src/components/slash-menu.tsx", readTemplate("base/src/components/slash-menu.tsx"));
 
   // UI primitives (shadcn-style)
   writeProject(projectPath, "src/components/ui/badge.tsx", readTemplate("base/src/components/ui/badge.tsx"));

@@ -6,6 +6,7 @@ import { runPrompts } from "./prompts.js";
 import { scaffoldProject } from "./scaffold.js";
 import { installDeps } from "./post-install.js";
 import { writeEnvLocal, runDbSetup, runDevServer } from "./quickstart.js";
+import { loginViaBrowser } from "./device-auth.js";
 import { AI_PROVIDERS, resolveProjectPath, projectExists } from "./utils.js";
 import type { ProjectConfig, ApiKeys } from "./utils.js";
 
@@ -125,6 +126,53 @@ async function promptForKey(name: string): Promise<string> {
   return value;
 }
 
+async function resolveSupyagentKey(parsed: ParsedArgs): Promise<string> {
+  // 1. Check CLI flag, env, and .env files first
+  const dotenvVars = loadEnvFiles();
+  const existing =
+    parsed.supyagentApiKey ??
+    process.env.SUPYAGENT_API_KEY ??
+    dotenvVars.SUPYAGENT_API_KEY;
+
+  if (existing) {
+    if (!parsed.supyagentApiKey) {
+      p.log.info(`Using ${pc.cyan("SUPYAGENT_API_KEY")} from ${process.env.SUPYAGENT_API_KEY ? "environment" : ".env file"}`);
+    }
+    return existing;
+  }
+
+  // 2. Ask user how they want to authenticate
+  const method = await p.select({
+    message: "How would you like to authenticate with Supyagent?",
+    options: [
+      {
+        value: "browser",
+        label: "Login via browser",
+        hint: "recommended — opens app.supyagent.com",
+      },
+      {
+        value: "manual",
+        label: "Paste API key",
+        hint: "enter an existing key manually",
+      },
+    ],
+  });
+
+  if (p.isCancel(method)) {
+    p.cancel("Cancelled.");
+    process.exit(1);
+  }
+
+  if (method === "browser") {
+    const key = await loginViaBrowser();
+    if (key) return key;
+    // Browser flow failed — fall back to manual entry
+    p.log.warn("Browser login failed. Please enter your API key manually.");
+  }
+
+  return promptForKey("SUPYAGENT_API_KEY");
+}
+
 async function resolveApiKeys(
   provider: ProjectConfig["aiProvider"],
   parsed: ParsedArgs,
@@ -133,15 +181,7 @@ async function resolveApiKeys(
   const cliFlag = CLI_KEY_MAP[provider];
   const dotenvVars = loadEnvFiles();
 
-  const supyagent =
-    parsed.supyagentApiKey ??
-    process.env.SUPYAGENT_API_KEY ??
-    dotenvVars.SUPYAGENT_API_KEY ??
-    (await promptForKey("SUPYAGENT_API_KEY"));
-
-  if (!parsed.supyagentApiKey && (process.env.SUPYAGENT_API_KEY || dotenvVars.SUPYAGENT_API_KEY)) {
-    p.log.info(`Using ${pc.cyan("SUPYAGENT_API_KEY")} from ${process.env.SUPYAGENT_API_KEY ? "environment" : ".env file"}`);
-  }
+  const supyagent = await resolveSupyagentKey(parsed);
 
   const providerKey =
     (parsed[cliFlag] as string | undefined) ??

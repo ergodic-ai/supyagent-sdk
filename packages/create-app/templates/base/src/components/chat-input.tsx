@@ -3,6 +3,7 @@
 import { ArrowUp, Square, Paperclip, X } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { FormEvent, KeyboardEvent, DragEvent, ClipboardEvent } from "react";
+import { SlashMenu, type SlashCommand } from "./slash-menu";
 
 interface ChatInputProps {
   sendMessage: (message: {
@@ -51,8 +52,11 @@ export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const slashQuery = slashMenuOpen && input.startsWith("/") ? input.slice(1) : "";
 
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -64,6 +68,15 @@ export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
   useEffect(() => {
     adjustHeight();
   }, [input, adjustHeight]);
+
+  // Track slash mode based on input
+  useEffect(() => {
+    if (input.startsWith("/") && !input.includes(" ")) {
+      setSlashMenuOpen(true);
+    } else {
+      setSlashMenuOpen(false);
+    }
+  }, [input]);
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const imageFiles = Array.from(newFiles).filter((f) =>
@@ -77,6 +90,23 @@ export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
   const removeFile = useCallback((index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
+
+  const handleSlashSelect = useCallback(
+    (command: SlashCommand) => {
+      setSlashMenuOpen(false);
+      const prompt = command.prompt;
+      // If prompt ends with space (open-ended), just set the input
+      if (prompt.endsWith(" ")) {
+        setInput(prompt);
+        textareaRef.current?.focus();
+      } else {
+        // Auto-submit complete prompts
+        setInput("");
+        sendMessage({ text: prompt });
+      }
+    },
+    [sendMessage]
+  );
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -111,6 +141,14 @@ export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // When slash menu is open, let it handle arrow keys and Enter
+    if (slashMenuOpen) {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "Enter" || e.key === "Escape") {
+        // These are handled by the SlashMenu's document-level keydown listener
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if ((input.trim() || files.length > 0) && !isLoading) {
@@ -158,6 +196,15 @@ export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
           : "border-border focus-within:border-ring focus-within:ring-1 focus-within:ring-ring"
       }`}
     >
+      {/* Slash command menu */}
+      {slashMenuOpen && (
+        <SlashMenu
+          query={slashQuery}
+          onSelect={handleSlashSelect}
+          onClose={() => setSlashMenuOpen(false)}
+        />
+      )}
+
       {/* File previews */}
       {files.length > 0 && (
         <div className="flex gap-2 px-3 pt-3 pb-0 flex-wrap">
@@ -210,7 +257,7 @@ export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          placeholder="Send a message..."
+          placeholder="Send a message... (type / for commands)"
           rows={1}
           className="flex-1 resize-none bg-transparent py-3 text-sm text-foreground placeholder-muted-foreground outline-none max-h-[200px]"
         />
