@@ -5,6 +5,7 @@ export default defineConfig([
     entry: {
       index: "src/index.ts",
       prisma: "src/prisma.ts",
+      context: "src/context.ts",
     },
     format: ["esm", "cjs"],
     dts: true,

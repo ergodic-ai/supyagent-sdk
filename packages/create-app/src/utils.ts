@@ -21,7 +21,7 @@ export interface ProjectConfig {
   database: "sqlite" | "postgres";
   agentMode: "skills" | "tools";
   model?: string;
-  quickstart?: boolean;
+  databaseUrl?: string;
   apiKeys?: ApiKeys;
 }
 

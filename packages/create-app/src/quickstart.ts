@@ -2,11 +2,12 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { execSync, spawn as nodeSpawn } from "node:child_process";
 import { detectPackageManager } from "nypm";
-import { AI_PROVIDERS, type ProjectConfig } from "./utils.js";
+import { AI_PROVIDERS, DB_CONFIGS, type ProjectConfig } from "./utils.js";
 
 export function writeEnvLocal(config: ProjectConfig): void {
-  const { projectPath, aiProvider, apiKeys } = config;
+  const { projectPath, aiProvider, apiKeys, database, databaseUrl } = config;
   const ai = AI_PROVIDERS[aiProvider];
+  const dbUrl = databaseUrl ?? DB_CONFIGS[database].url;
 
   const lines = [
     "# Supyagent — Get your API key at https://app.supyagent.com",
@@ -16,20 +17,20 @@ export function writeEnvLocal(config: ProjectConfig): void {
     `${ai.envKey}=${apiKeys?.provider ?? ""}`,
     "",
     "# Database",
-    `DATABASE_URL="file:./dev.db"`,
+    `DATABASE_URL="${dbUrl}"`,
     "",
   ];
 
   writeFileSync(join(projectPath, ".env.local"), lines.join("\n"), "utf-8");
 }
 
-export async function runDbSetup(projectPath: string): Promise<void> {
+export async function runDbSetup(projectPath: string, databaseUrl?: string): Promise<void> {
   const pm = await detectPackageManager(projectPath);
   const cmd = pm?.name ?? "pnpm";
   execSync(`${cmd} run db:setup`, {
     cwd: projectPath,
     stdio: "inherit",
-    env: { ...process.env, DATABASE_URL: "file:./dev.db" },
+    env: { ...process.env, DATABASE_URL: databaseUrl ?? "file:./dev.db" },
   });
 }
 

@@ -12,6 +12,7 @@ interface ChatInputProps {
   }) => Promise<void>;
   isLoading: boolean;
   stop: () => void;
+  onCompact?: () => void;
 }
 
 const MAX_BASE64_BYTES = 4.5 * 1024 * 1024; // stay well under provider 5MB limit
@@ -48,7 +49,7 @@ function compressImage(file: File): Promise<{ url: string; mediaType: string }> 
   });
 }
 
-export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
+export function ChatInput({ sendMessage, isLoading, stop, onCompact }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -95,6 +96,14 @@ export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
     (command: SlashCommand) => {
       setSlashMenuOpen(false);
       const prompt = command.prompt;
+
+      // Intercept special commands
+      if (prompt === "__compact__") {
+        setInput("");
+        onCompact?.();
+        return;
+      }
+
       // If prompt ends with space (open-ended), just set the input
       if (prompt.endsWith(" ")) {
         setInput(prompt);
@@ -105,7 +114,7 @@ export function ChatInput({ sendMessage, isLoading, stop }: ChatInputProps) {
         sendMessage({ text: prompt });
       }
     },
-    [sendMessage]
+    [sendMessage, onCompact]
   );
 
   const handleSubmit = async (e: FormEvent) => {

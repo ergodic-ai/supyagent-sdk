@@ -16,6 +16,12 @@
       "require": "./dist/prisma.cjs",
       "default": "./dist/prisma.js"
     },
+    "./context": {
+      "types": "./dist/context.d.ts",
+      "import": "./dist/context.js",
+      "require": "./dist/context.cjs",
+      "default": "./dist/context.js"
+    },
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js",

@@ -7,11 +7,10 @@ import { scaffoldProject } from "./scaffold.js";
 import { installDeps } from "./post-install.js";
 import { writeEnvLocal, runDbSetup, runDevServer } from "./quickstart.js";
 import { loginViaBrowser } from "./device-auth.js";
-import { AI_PROVIDERS, resolveProjectPath, projectExists } from "./utils.js";
+import { AI_PROVIDERS, DB_CONFIGS, resolveProjectPath, projectExists } from "./utils.js";
 import type { ProjectConfig, ApiKeys } from "./utils.js";
 
 interface ParsedArgs extends Partial<ProjectConfig> {
-  skipInstall?: boolean;
   supyagentApiKey?: string;
   anthropicApiKey?: string;
   openaiApiKey?: string;
@@ -36,10 +35,6 @@ function parseArgs(): ParsedArgs {
       result.agentMode = args[++i] as ProjectConfig["agentMode"];
     } else if (arg === "--model" && hasValue) {
       result.model = args[++i];
-    } else if (arg === "--quickstart") {
-      result.quickstart = true;
-    } else if (arg === "--skip-install") {
-      result.skipInstall = true;
     } else if (arg === "--supyagent-api-key" && hasValue) {
       result.supyagentApiKey = args[++i];
     } else if (arg === "--anthropic-api-key" && hasValue) {
@@ -199,211 +194,96 @@ async function resolveApiKeys(
 async function main() {
   const parsed = parseArgs();
 
-  if (parsed.quickstart) {
-    // ── Quickstart mode ──
-    if (parsed.database === "postgres") {
-      p.log.warn(
-        pc.yellow("--quickstart requires SQLite — ignoring --db postgres"),
-      );
-    }
-    if (parsed.skipInstall) {
-      p.log.warn(
-        pc.yellow(
-          "--quickstart needs dependencies installed — ignoring --skip-install",
-        ),
-      );
-    }
+  // Collect project config — prompts or CLI flags
+  let config: ProjectConfig | null;
 
-    p.intro(pc.bgCyan(pc.black(" Create Supyagent App — Quickstart ")));
-
-    // Resolve project name
-    let projectName = parsed.projectName;
-    if (!projectName) {
-      const name = await p.text({
-        message: "Project name",
-        placeholder: "my-supyagent-app",
-        defaultValue: "my-supyagent-app",
-        validate(value) {
-          if (!value) return "Project name is required";
-          if (!/^[a-z0-9][a-z0-9._-]*$/.test(value)) {
-            return "Invalid project name (lowercase, alphanumeric, hyphens, dots)";
-          }
-        },
-      });
-      if (p.isCancel(name)) {
-        p.cancel("Cancelled.");
-        process.exit(1);
-      }
-      projectName = name as string;
-    }
-
-    const projectPath = resolveProjectPath(projectName);
+  if (parsed.projectName && parsed.aiProvider && parsed.database) {
+    // All required args provided — skip interactive prompts
+    const projectPath = resolveProjectPath(parsed.projectName);
     if (projectExists(projectPath)) {
-      p.cancel(`Directory "${projectName}" already exists.`);
+      p.cancel(`Directory "${parsed.projectName}" already exists.`);
       process.exit(1);
     }
-
-    // Resolve provider
-    let aiProvider = parsed.aiProvider;
-    if (!aiProvider) {
-      const selected = await p.select({
-        message: "AI provider",
-        options: [
-          { value: "anthropic", label: AI_PROVIDERS.anthropic.label },
-          { value: "openai", label: AI_PROVIDERS.openai.label },
-          { value: "openrouter", label: AI_PROVIDERS.openrouter.label },
-        ],
-      });
-      if (p.isCancel(selected)) {
-        p.cancel("Cancelled.");
-        process.exit(1);
-      }
-      aiProvider = selected as ProjectConfig["aiProvider"];
-    }
-
-    // Resolve agent mode
-    let agentMode = parsed.agentMode;
-    if (!agentMode) {
-      const selected = await p.select({
-        message: "Agent mode",
-        options: [
-          { value: "skills", label: "Skills (token-efficient)", hint: "recommended" },
-          { value: "tools", label: "Tools (rich tool definitions)" },
-        ],
-      });
-      if (p.isCancel(selected)) {
-        p.cancel("Cancelled.");
-        process.exit(1);
-      }
-      agentMode = selected as ProjectConfig["agentMode"];
-    }
-
-    // Resolve API keys
-    const apiKeys = await resolveApiKeys(aiProvider, parsed);
-
-    const config: ProjectConfig = {
-      projectName,
+    config = {
+      projectName: parsed.projectName,
       projectPath,
-      aiProvider,
-      agentMode,
-      database: "sqlite",
+      aiProvider: parsed.aiProvider,
+      agentMode: parsed.agentMode ?? "skills",
+      database: parsed.database,
       model: parsed.model,
-      quickstart: true,
-      apiKeys,
     };
-
-    const s = p.spinner();
-
-    // Scaffold
-    s.start("Scaffolding project...");
-    scaffoldProject(config);
-    writeEnvLocal(config);
-    s.stop("Scaffolded project");
-
-    // Install deps
-    s.start("Installing dependencies...");
-    try {
-      await installDeps(config.projectPath);
-      s.stop("Installed dependencies");
-    } catch {
-      s.stop("Failed to install dependencies — run install manually");
-      process.exit(1);
-    }
-
-    // Database setup
-    s.start("Setting up database...");
-    try {
-      await runDbSetup(config.projectPath);
-      s.stop("Database ready");
-    } catch (err) {
-      s.stop("Database setup failed");
-      p.log.warn(
-        `Run ${pc.cyan(`cd ${projectName} && pnpm db:setup`)} manually`,
-      );
-    }
-
-    // Dev server
-    p.log.info(pc.green("Starting dev server..."));
-    await runDevServer(config.projectPath);
   } else {
-    // ── Existing non-quickstart flow ──
-    const isNonInteractive =
-      parsed.projectName && parsed.aiProvider && parsed.database;
-
-    let config: ProjectConfig | null;
-
-    if (isNonInteractive) {
-      config = {
-        projectName: parsed.projectName!,
-        projectPath: parsed.projectPath!,
-        aiProvider: parsed.aiProvider!,
-        agentMode: parsed.agentMode ?? "skills",
-        database: parsed.database!,
-        model: parsed.model,
-      };
-      console.log(`Creating ${config.projectName}...`);
-    } else {
-      config = await runPrompts(parsed.projectName, {
-        aiProvider: parsed.aiProvider,
-        agentMode: parsed.agentMode,
-        database: parsed.database,
-      });
-      if (config && parsed.model) {
-        config.model = parsed.model;
-      }
-    }
-
-    if (!config) {
-      process.exit(1);
-    }
-
-    if (isNonInteractive) {
-      scaffoldProject(config);
-      console.log("Scaffolded project");
-
-      if (!parsed.skipInstall) {
-        console.log("Installing dependencies...");
-        try {
-          await installDeps(config.projectPath);
-          console.log("Installed dependencies");
-        } catch {
-          console.log(
-            "Failed to install dependencies — run install manually",
-          );
-        }
-      }
-
-      console.log(
-        `\nNext steps:\n  cd ${config.projectName}\n  cp .env.example .env.local\n  pnpm db:setup\n  pnpm dev`,
-      );
-    } else {
-      const s = p.spinner();
-
-      s.start("Scaffolding project...");
-      scaffoldProject(config);
-      s.stop("Scaffolded project");
-
-      s.start("Installing dependencies...");
-      try {
-        await installDeps(config.projectPath);
-        s.stop("Installed dependencies");
-      } catch {
-        s.stop("Failed to install dependencies — run install manually");
-      }
-
-      p.note(
-        [
-          `cd ${config.projectName}`,
-          `cp .env.example .env.local    ${pc.dim("# Add your API keys")}`,
-          `pnpm db:setup                 ${pc.dim("# Initialize database")}`,
-          `pnpm dev                      ${pc.dim("# Start development server")}`,
-        ].join("\n"),
-        "Next steps",
-      );
-
-      p.outro(pc.green("Done!"));
+    config = await runPrompts(parsed.projectName, {
+      aiProvider: parsed.aiProvider,
+      agentMode: parsed.agentMode,
+      database: parsed.database,
+    });
+    if (config && parsed.model) {
+      config.model = parsed.model;
     }
   }
+
+  if (!config) {
+    process.exit(1);
+  }
+
+  p.intro(pc.bgCyan(pc.black(" Create Supyagent App ")));
+
+  // If PostgreSQL, prompt for DATABASE_URL
+  if (config.database === "postgres") {
+    const dbUrl = await p.text({
+      message: "PostgreSQL connection URL",
+      placeholder: DB_CONFIGS.postgres.url,
+      validate(value) {
+        if (!value) return "Connection URL is required";
+      },
+    });
+    if (p.isCancel(dbUrl)) {
+      p.cancel("Cancelled.");
+      process.exit(1);
+    }
+    config.databaseUrl = dbUrl as string;
+  } else {
+    config.databaseUrl = DB_CONFIGS.sqlite.url;
+  }
+
+  // Resolve API keys
+  const apiKeys = await resolveApiKeys(config.aiProvider, parsed);
+  config.apiKeys = apiKeys;
+
+  const s = p.spinner();
+
+  // Scaffold
+  s.start("Scaffolding project...");
+  scaffoldProject(config);
+  writeEnvLocal(config);
+  s.stop("Scaffolded project");
+
+  // Install deps
+  s.start("Installing dependencies...");
+  try {
+    await installDeps(config.projectPath);
+    s.stop("Installed dependencies");
+  } catch {
+    s.stop("Failed to install dependencies — run install manually");
+    process.exit(1);
+  }
+
+  // Database setup
+  s.start("Setting up database...");
+  try {
+    await runDbSetup(config.projectPath, config.databaseUrl);
+    s.stop("Database ready");
+  } catch {
+    s.stop("Database setup failed");
+    p.log.warn(
+      `Run ${pc.cyan(`cd ${config.projectName} && pnpm db:setup`)} manually`,
+    );
+  }
+
+  // Dev server
+  p.log.info(pc.green("Starting dev server..."));
+  await runDevServer(config.projectPath);
 }
 
 main().catch(console.error);

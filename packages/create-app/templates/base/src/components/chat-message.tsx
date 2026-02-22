@@ -2,6 +2,7 @@
 
 import type { UIMessage } from "ai";
 import { isToolUIPart } from "ai";
+import { SummaryMessage, isContextSummary } from "@supyagent/sdk/react";
 import { ToolMessage } from "@/components/supyagent/tool-message";
 import { useState } from "react";
 import { Streamdown } from "streamdown";
@@ -44,6 +45,15 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export function ChatMessage({ message, addToolApprovalResponse }: ChatMessageProps) {
+  // Render context-summary messages with a distinct card
+  if (isContextSummary(message)) {
+    return (
+      <div className="flex justify-center">
+        <SummaryMessage message={message} className="max-w-[85%]" />
+      </div>
+    );
+  }
+
   const isUser = message.role === "user";
   const textContent = message.parts
     .filter((part) => part.type === "text")

@@ -7,6 +7,7 @@ import { ChatInput } from "./chat-input";
 import { ChatSidebar } from "./chat-sidebar";
 import { useRef, useEffect, useMemo, useState, useCallback } from "react";
 import { ArrowDown, Mail, MessageSquare, Github, ExternalLink } from "lucide-react";
+import { ContextIndicator } from "@supyagent/sdk/react";
 import { Header } from "./header";
 import Image from "next/image";
 
@@ -50,7 +51,7 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
     [chatId]
   );
 
-  const { messages, sendMessage, status, stop, addToolApprovalResponse } = useChat({
+  const { messages, sendMessage, status, stop, addToolApprovalResponse, setMessages } = useChat({
     id: chatId,
     transport,
     messages: initialMessages,
@@ -58,6 +59,27 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
   });
 
   const isLoading = status === "submitted" || status === "streaming";
+  const [isCompacting, setIsCompacting] = useState(false);
+
+  const handleCompact = useCallback(async () => {
+    if (isCompacting || isLoading) return;
+    setIsCompacting(true);
+    try {
+      const res = await fetch("/api/chat/compact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId }),
+      });
+      if (res.ok) {
+        const { messages: compactedMessages } = await res.json();
+        setMessages(compactedMessages);
+      }
+    } catch {
+      // Compact failed silently
+    } finally {
+      setIsCompacting(false);
+    }
+  }, [chatId, isCompacting, isLoading, setMessages]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -243,10 +265,14 @@ export function Chat({ chatId, initialMessages }: ChatProps) {
 
         <div className="border-t border-border px-4 py-4">
           <div className="mx-auto max-w-3xl">
+            <div className="flex items-center justify-end mb-1.5 min-h-[20px]">
+              <ContextIndicator messages={messages} />
+            </div>
             <ChatInput
               sendMessage={sendMessage}
               isLoading={isLoading}
               stop={stop}
+              onCompact={handleCompact}
             />
           </div>
         </div>

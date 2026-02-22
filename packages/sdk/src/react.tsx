@@ -30,6 +30,12 @@ export { ProviderIcon } from "./ui/provider-icon.js";
 // ── Input renderer ───────────────────────────────────────────────────────────
 export { ToolInput } from "./ui/tool-input.js";
 
+// ── Context management UI ────────────────────────────────────────────────────
+export { ContextIndicator } from "./ui/context-indicator.js";
+export type { ContextIndicatorProps } from "./ui/context-indicator.js";
+export { SummaryMessage, isContextSummary } from "./ui/summary-message.js";
+export type { SummaryMessageProps } from "./ui/summary-message.js";
+
 // ── Normalizers (Microsoft data) ─────────────────────────────────────────────
 export {
   normalizeMicrosoftMail,

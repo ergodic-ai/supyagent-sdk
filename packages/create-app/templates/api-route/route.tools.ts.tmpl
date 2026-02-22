@@ -1,6 +1,7 @@
 import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from 'ai';
 {{aiProviderImport}};
 import { supyagent, createBashTool, createViewImageTool } from '@supyagent/sdk';
+import { createContextManager } from '@supyagent/sdk/context';
 import { createPrismaAdapter } from '@supyagent/sdk/prisma';
 import { prisma } from '@/lib/prisma';
 
@@ -15,12 +16,36 @@ export async function POST(req: Request) {
   const supyagentTools = await client.tools({ cache: 300 });
   const tools = { ...supyagentTools, bash: createBashTool(), viewImage: createViewImageTool() };
 
+  // Context management — tracks token usage and compactifies when thresholds are exceeded
+  const ctx = createContextManager({
+    maxTokens: 128_000,
+    summaryModel: {{aiModel}},
+  });
+
+  ctx.updateEstimate(messages);
+
+  // Hard threshold: compactify before the LLM call if context is too large
+  let activeMessages = messages;
+  if (ctx.shouldCompactify(messages)) {
+    activeMessages = await ctx.compactify(messages);
+    await adapter.saveChat(chatId, activeMessages as any);
+  }
+
+  const systemBase = 'You are a helpful assistant. Use your tools when asked to interact with connected services. You can also run bash commands to help with tasks. When a tool execution is not approved by the user, do not retry it — explain what you were trying to do and ask how to proceed.';
+  const { messages: preparedMessages, systemPrompt } = await ctx.prepareMessages(activeMessages, systemBase);
+
   const result = streamText({
     model: {{aiModel}},
-    system: 'You are a helpful assistant. Use your tools when asked to interact with connected services. You can also run bash commands to help with tasks. When a tool execution is not approved by the user, do not retry it — explain what you were trying to do and ask how to proceed.',
-    messages: await convertToModelMessages(messages),
+    system: systemPrompt,
+    messages: await convertToModelMessages(preparedMessages),
     tools,
     stopWhen: stepCountIs(5),
+    onStepFinish: ({ usage }) => {
+      ctx.recordUsage({
+        inputTokens: usage.inputTokens ?? undefined,
+        outputTokens: usage.outputTokens ?? undefined,
+      });
+    },
     prepareStep: async ({ steps, messages: stepMessages }) => {
       const imageUrls: string[] = [];
       for (const step of steps) {
@@ -30,6 +55,19 @@ export async function POST(req: Request) {
           }
         }
       }
+
+      // Mid-chain hard threshold check
+      if (ctx.shouldCompactify(activeMessages)) {
+        activeMessages = await ctx.compactify(activeMessages);
+        await adapter.saveChat(chatId, activeMessages as any);
+        const { messages: trimmed, systemPrompt: newSystem } =
+          await ctx.prepareMessages(activeMessages, systemBase);
+        return {
+          system: newSystem,
+          messages: await convertToModelMessages(trimmed),
+        };
+      }
+
       if (imageUrls.length === 0) return undefined;
 
       return {
@@ -50,11 +88,25 @@ export async function POST(req: Request) {
 
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
+    messageMetadata: ({ part }) => {
+      if (part.type === 'finish-step') {
+        return ctx.getMessageMetadata();
+      }
+      return undefined;
+    },
     onStepFinish: async ({ messages: updatedMessages }) => {
       await adapter.saveChat(chatId, updatedMessages as any);
     },
     onFinish: async ({ messages: updatedMessages }) => {
       await adapter.saveChat(chatId, updatedMessages as any);
+
+      // Soft threshold: background summarization after the response
+      ctx.updateEstimate(updatedMessages);
+      if (ctx.shouldSummarize(updatedMessages)) {
+        ctx.compactify(updatedMessages)
+          .then(compacted => adapter.saveChat(chatId, compacted as any))
+          .catch(() => {});
+      }
     },
   });
 }

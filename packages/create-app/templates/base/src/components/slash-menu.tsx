@@ -10,6 +10,7 @@ import {
   Search,
   Send,
   CalendarClock,
+  Minimize2,
 } from "lucide-react";
 
 interface SlashCommand {
@@ -29,6 +30,7 @@ const COMMANDS: SlashCommand[] = [
   { name: "search", label: "/search", description: "Search the web for...", prompt: "Search the web for ", icon: <Search className="h-4 w-4" /> },
   { name: "compose", label: "/compose", description: "Draft an email to...", prompt: "Draft an email to ", icon: <Send className="h-4 w-4" /> },
   { name: "schedule", label: "/schedule", description: "Schedule a meeting for...", prompt: "Schedule a meeting for ", icon: <CalendarClock className="h-4 w-4" /> },
+  { name: "compact", label: "/compact", description: "Compact conversation history", prompt: "__compact__", icon: <Minimize2 className="h-4 w-4" /> },
 ];
 
 interface SlashMenuProps {

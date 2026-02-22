@@ -67,6 +67,11 @@ export function scaffoldProject(config: ProjectConfig): void {
     "src/app/api/chat/route.ts",
     applyTemplate(readTemplate(routeTemplate), vars)
   );
+  writeProject(
+    projectPath,
+    "src/app/api/chat/compact/route.ts",
+    applyTemplate(readTemplate("api-route/compact/route.ts.tmpl"), vars)
+  );
   writeProject(projectPath, "src/app/api/chats/route.ts", readTemplate("base/src/app/api/chats/route.ts"));
   writeProject(projectPath, "src/app/api/chats/[id]/route.ts", readTemplate("base/src/app/api/chats/[id]/route.ts"));
   writeProject(projectPath, "src/app/api/jobs/[id]/route.ts", readTemplate("base/src/app/api/jobs/[id]/route.ts"));
