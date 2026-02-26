@@ -1,23 +1,64 @@
-import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  streamText,
+  stepCountIs,
+  type UIMessage,
+} from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
-const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+});
 import { supyagent } from "@supyagent/sdk";
 import { createContextManager } from "@supyagent/sdk/context";
-import { createPrismaAdapter } from "@supyagent/sdk/prisma";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
 const client = supyagent({ apiKey: process.env.SUPYAGENT_API_KEY! });
-const adapter = createPrismaAdapter(prisma);
 
-async function saveChatWithUser(chatId: string, messages: UIMessage[], userId: string) {
-  await adapter.saveChat(chatId, messages as any);
-  // Ensure userId is set on the chat record
-  await prisma.chat.update({
+function extractTitle(messages: UIMessage[]): string {
+  const firstUserMsg = messages.find((m) => m.role === "user");
+  if (!firstUserMsg) return "New Chat";
+  const textPart = firstUserMsg.parts.find((p) => p.type === "text");
+  if (textPart && "text" in textPart && typeof textPart.text === "string") {
+    return textPart.text.slice(0, 100);
+  }
+  return "New Chat";
+}
+
+async function saveChatWithUser(
+  chatId: string,
+  messages: UIMessage[],
+  userId: string,
+) {
+  const title = extractTitle(messages);
+
+  // Upsert chat with userId included
+  await prisma.chat.upsert({
     where: { id: chatId },
-    data: { userId },
+    create: { id: chatId, title, userId },
+    update: { title },
   });
+
+  // Upsert messages
+  await prisma.$transaction(
+    messages.map((msg) =>
+      prisma.message.upsert({
+        where: { id: msg.id },
+        create: {
+          id: msg.id,
+          chatId,
+          role: msg.role,
+          parts: JSON.stringify(msg.parts),
+          metadata: msg.metadata ? JSON.stringify(msg.metadata) : null,
+        },
+        update: {
+          parts: JSON.stringify(msg.parts),
+          metadata: msg.metadata ? JSON.stringify(msg.metadata) : null,
+        },
+      }),
+    ),
+  );
 }
 
 export async function POST(req: Request) {
@@ -27,17 +68,20 @@ export async function POST(req: Request) {
   }
 
   const userId = session.user.id;
-  const { messages, chatId }: { messages: UIMessage[]; chatId: string } = await req.json();
+  const { messages, chatId }: { messages: UIMessage[]; chatId: string } =
+    await req.json();
 
   await saveChatWithUser(chatId, messages, userId);
 
   // Use scoped client for this user's integrations
   const userClient = client.asAccount(userId);
-  const { systemPrompt: skillsPrompt, tools } = await userClient.skills({ cache: 300 });
+  const { systemPrompt: skillsPrompt, tools } = await userClient.skills({
+    cache: 300,
+  });
 
   const ctx = createContextManager({
     maxTokens: 128_000,
-    summaryModel: openrouter("anthropic/claude-sonnet-4"),
+    summaryModel: openrouter("z-ai/glm-5"),
   });
 
   ctx.updateEstimate(messages);
@@ -49,7 +93,8 @@ export async function POST(req: Request) {
   }
 
   const systemBase = `You are a helpful assistant.\n\n${skillsPrompt}\n\nUse the loadSkill tool to get detailed instructions before using any skill. Use the apiCall tool to make authenticated API requests. When a tool execution is not approved by the user, do not retry it — explain what you were trying to do and ask how to proceed.`;
-  const { messages: preparedMessages, systemPrompt } = await ctx.prepareMessages(activeMessages, systemBase);
+  const { messages: preparedMessages, systemPrompt } =
+    await ctx.prepareMessages(activeMessages, systemBase);
 
   const result = streamText({
     model: openrouter("anthropic/claude-sonnet-4"),
@@ -94,7 +139,8 @@ export async function POST(req: Request) {
 
       ctx.updateEstimate(updatedMessages);
       if (ctx.shouldSummarize(updatedMessages)) {
-        ctx.compactify(updatedMessages)
+        ctx
+          .compactify(updatedMessages)
           .then((compacted) => saveChatWithUser(chatId, compacted, userId))
           .catch(() => {});
       }
