@@ -102,9 +102,117 @@ export interface SkillsResult {
   tools: Record<string, import("ai").Tool>;
 }
 
+// ── Connected Accounts ───────────────────────────────────────────────────────
+
+/** A connected account (end-user of the partner) */
+export interface ConnectedAccount {
+  id: string;
+  externalId: string;
+  displayName: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** A connected account with its integrations */
+export interface ConnectedAccountWithIntegrations extends ConnectedAccount {
+  integrations: AccountIntegration[];
+}
+
+/** A single integration on a connected account */
+export interface AccountIntegration {
+  id: string;
+  provider: string;
+  status: string;
+  connectedAt: string;
+}
+
+/** An integration with its enabled services */
+export interface AccountIntegrationDetail extends AccountIntegration {
+  enabledServices: Array<{
+    serviceName: string;
+    isEnabled: boolean;
+  }>;
+}
+
+/** Options for creating a connected account */
+export interface CreateAccountOptions {
+  externalId: string;
+  displayName?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** Options for updating a connected account */
+export interface UpdateAccountOptions {
+  displayName?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** Options for listing connected accounts */
+export interface ListAccountsOptions {
+  limit?: number;
+  offset?: number;
+}
+
+/** Paginated response from accounts.list() */
+export interface ListAccountsResponse {
+  accounts: ConnectedAccount[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** Options for initiating an OAuth connect session */
+export interface ConnectOptions {
+  provider: string;
+  redirectUrl: string;
+  scopes?: string[];
+}
+
+/** Response from accounts.connect() */
+export interface ConnectSession {
+  connectUrl: string;
+  sessionId: string;
+  expiresAt: string;
+}
+
+/** Response from accounts.getSession() */
+export interface ConnectSessionStatus {
+  sessionId: string;
+  provider: string;
+  status: string;
+  error?: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/** The accounts sub-client */
+export interface AccountsClient {
+  create(options: CreateAccountOptions): Promise<ConnectedAccount>;
+  list(options?: ListAccountsOptions): Promise<ListAccountsResponse>;
+  get(id: string): Promise<ConnectedAccountWithIntegrations>;
+  update(id: string, options: UpdateAccountOptions): Promise<ConnectedAccount>;
+  delete(id: string): Promise<{ deleted: true }>;
+  connect(id: string, options: ConnectOptions): Promise<ConnectSession>;
+  getSession(id: string, sessionId: string): Promise<ConnectSessionStatus>;
+  integrations(id: string): Promise<AccountIntegrationDetail[]>;
+  disconnect(id: string, provider: string): Promise<{ deleted: true; provider: string }>;
+}
+
+/** Client scoped to a specific connected account. Sends X-Account-Id on all requests. */
+export interface ScopedClient {
+  /** The external ID this client is scoped to */
+  readonly accountId: string;
+  tools(options?: ToolFilterOptions): Promise<Record<string, import("ai").Tool>>;
+  skills(options?: SkillsOptions): Promise<SkillsResult>;
+  me(options?: MeOptions): Promise<MeResponse>;
+}
+
 /** The supyagent client interface */
 export interface SupyagentClient {
   tools(options?: ToolFilterOptions): Promise<Record<string, import("ai").Tool>>;
   skills(options?: SkillsOptions): Promise<SkillsResult>;
   me(options?: MeOptions): Promise<MeResponse>;
+  accounts: AccountsClient;
+  /** Returns a client scoped to a connected account. All requests include X-Account-Id. */
+  asAccount(externalId: string): ScopedClient;
 }

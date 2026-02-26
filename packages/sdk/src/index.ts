@@ -2,6 +2,7 @@ export { supyagent } from "./core/client.js";
 export type {
   SupyagentOptions,
   SupyagentClient,
+  ScopedClient,
   ToolFilterOptions,
   ToolMetadata,
   OpenAITool,
@@ -12,6 +13,19 @@ export type {
   ParsedSkillsDocument,
   MeOptions,
   MeResponse,
+  // Connected accounts
+  ConnectedAccount,
+  ConnectedAccountWithIntegrations,
+  AccountIntegration,
+  AccountIntegrationDetail,
+  CreateAccountOptions,
+  UpdateAccountOptions,
+  ListAccountsOptions,
+  ListAccountsResponse,
+  ConnectOptions,
+  ConnectSession,
+  ConnectSessionStatus,
+  AccountsClient,
 } from "./core/types.js";
 export { createBashTool } from "./tools/bash.js";
 export type { BashToolOptions, BashToolResult } from "./tools/bash.js";

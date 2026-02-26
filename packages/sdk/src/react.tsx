@@ -81,3 +81,55 @@ export { LinkedInFormatter } from "./ui/formatters/linkedin.js";
 export { WhatsAppFormatter } from "./ui/formatters/whatsapp.js";
 export { BrowserFormatter } from "./ui/formatters/browser.js";
 export { ViewImageFormatter } from "./ui/formatters/view-image.js";
+
+// ── Connect (popup + callback) ──────────────────────────────────────────────
+
+import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { openConnectPopup } from "./connect/popup.js";
+import { handleConnectCallback } from "./connect/callback.js";
+import type { ConnectPopupOptions, ConnectPopupResult } from "./connect/types.js";
+
+export type { ConnectPopupOptions, ConnectPopupResult } from "./connect/types.js";
+
+/** React hook wrapping openConnectPopup with loading/error state. */
+export function useSupyagentConnect() {
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [result, setResult] = useState<ConnectPopupResult | null>(null);
+
+  const connect = useCallback(async (options: ConnectPopupOptions) => {
+    setIsConnecting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await openConnectPopup(options);
+      setResult(res);
+      return res;
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      setError(e);
+      throw e;
+    } finally {
+      setIsConnecting(false);
+    }
+  }, []);
+
+  return { connect, isConnecting, error, result };
+}
+
+/** Drop-in component for the partner's redirect page. */
+export function ConnectCallback({
+  children,
+  targetOrigin,
+  autoClose = true,
+}: {
+  children?: ReactNode;
+  targetOrigin?: string;
+  autoClose?: boolean;
+}) {
+  useEffect(() => {
+    handleConnectCallback({ targetOrigin, autoClose });
+  }, [targetOrigin, autoClose]);
+
+  return <>{children ?? null}</>;
+}

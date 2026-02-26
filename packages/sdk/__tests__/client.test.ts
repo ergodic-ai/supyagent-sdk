@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { supyagent } from "../src/core/client.js";
-import type { ToolsResponse } from "../src/core/types.js";
+import type { ToolsResponse, ScopedClient, SupyagentClient } from "../src/core/types.js";
 
 const MOCK_RESPONSE: ToolsResponse = {
   tools: [
@@ -204,5 +204,136 @@ describe("supyagent client", () => {
     const tools = await client.tools();
 
     expect(tools).toEqual({});
+  });
+});
+
+describe("asAccount()", () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("returns a ScopedClient with tools/skills/me", () => {
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_123");
+
+    expect(typeof scoped.tools).toBe("function");
+    expect(typeof scoped.skills).toBe("function");
+    expect(typeof scoped.me).toBe("function");
+  });
+
+  it("accountId returns the external ID", () => {
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_456");
+
+    expect(scoped.accountId).toBe("user_456");
+  });
+
+  it("does not have accounts property", () => {
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_123") as unknown as Record<string, unknown>;
+
+    expect(scoped.accounts).toBeUndefined();
+  });
+
+  it("does not have asAccount property", () => {
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_123") as unknown as Record<string, unknown>;
+
+    expect(scoped.asAccount).toBeUndefined();
+  });
+
+  it("sends X-Account-Id header on tools() fetch", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => MOCK_RESPONSE,
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_123");
+    await scoped.tools();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/tools",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-Account-Id": "user_123",
+        }),
+      })
+    );
+  });
+
+  it("sends X-Account-Id header on skills() fetch", async () => {
+    const MOCK_SKILLS = `---\nname: Test\ndescription: Test skills\n---\nPreamble\n---\n# Gmail\nGmail docs`;
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      text: async () => MOCK_SKILLS,
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_123");
+    await scoped.skills();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/skills",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-Account-Id": "user_123",
+        }),
+      })
+    );
+  });
+
+  it("sends X-Account-Id header on me() fetch", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        email: "user@test.com",
+        tier: "pro",
+        usage: { current: 10, limit: 1000 },
+        integrations: [],
+        dashboardUrl: "https://app.supyagent.com",
+      }),
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_123");
+    await scoped.me();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/me",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-Account-Id": "user_123",
+        }),
+      })
+    );
+  });
+
+  it("has separate cache from parent client", async () => {
+    let callCount = 0;
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      callCount++;
+      return {
+        ok: true,
+        json: async () => MOCK_RESPONSE,
+      };
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_123");
+
+    // Fetch on parent (cached)
+    await client.tools({ cache: 300 });
+    // Fetch on scoped (should NOT use parent's cache)
+    await scoped.tools({ cache: 300 });
+
+    // Both should have made separate fetch calls
+    expect(callCount).toBe(2);
   });
 });

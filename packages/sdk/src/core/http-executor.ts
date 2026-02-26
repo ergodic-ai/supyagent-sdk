@@ -11,7 +11,8 @@ import type { ToolMetadata } from "./types.js";
 export function createExecutor(
   metadata: ToolMetadata,
   baseUrl: string,
-  apiKey: string
+  apiKey: string,
+  accountId?: string,
 ): (args: Record<string, unknown>) => Promise<unknown> {
   return async (args: Record<string, unknown>) => {
     const { method, path, bodyDefaults } = metadata;
@@ -61,6 +62,7 @@ export function createExecutor(
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        ...(accountId ? { "X-Account-Id": accountId } : {}),
       },
     };
 

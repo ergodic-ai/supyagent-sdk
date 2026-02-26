@@ -45,7 +45,7 @@ const VALID_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
  * Create the apiCall tool.
  * Makes authenticated HTTP requests to the Supyagent API.
  */
-export function createApiCallTool(baseUrl: string, apiKey: string) {
+export function createApiCallTool(baseUrl: string, apiKey: string, accountId?: string) {
   return tool({
     description:
       "Make an authenticated HTTP request to the Supyagent API. Use loadSkill first to understand available endpoints. The authorization header and base URL are handled automatically — only provide the path (e.g., /api/v1/google/gmail/messages).",
@@ -116,6 +116,7 @@ export function createApiCallTool(baseUrl: string, apiKey: string) {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
+          ...(accountId ? { "X-Account-Id": accountId } : {}),
         },
       };
 

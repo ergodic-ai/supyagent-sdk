@@ -9,7 +9,8 @@ import { createExecutor } from "./http-executor.js";
 export function convertTools(
   tools: OpenAITool[],
   baseUrl: string,
-  apiKey: string
+  apiKey: string,
+  accountId?: string,
 ): Record<string, import("ai").Tool> {
   const result: Record<string, import("ai").Tool> = {};
 
@@ -20,7 +21,7 @@ export function convertTools(
     result[name] = tool({
       description,
       inputSchema: jsonSchema(parameters as Parameters<typeof jsonSchema>[0]),
-      execute: async (args) => createExecutor(metadata, baseUrl, apiKey)(args as Record<string, unknown>),
+      execute: async (args) => createExecutor(metadata, baseUrl, apiKey, accountId)(args as Record<string, unknown>),
     });
   }
 

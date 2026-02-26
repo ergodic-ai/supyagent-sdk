@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     system: systemPrompt,
     messages: await convertToModelMessages(preparedMessages),
     tools,
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(50),
     onStepFinish: ({ usage }) => {
       ctx.recordUsage({
         inputTokens: usage.inputTokens ?? undefined,

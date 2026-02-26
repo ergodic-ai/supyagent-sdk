@@ -1,6 +1,6 @@
 {
   "name": "@supyagent/sdk",
-  "version": "0.1.39",
+  "version": "0.2.0",
   "description": "Supyagent SDK — AI SDK tools, persistence, and UI components",
   "type": "module",
   "exports": {
@@ -21,6 +21,12 @@
       "import": "./dist/context.js",
       "require": "./dist/context.cjs",
       "default": "./dist/context.js"
+    },
+    "./connect": {
+      "types": "./dist/connect.d.ts",
+      "import": "./dist/connect.js",
+      "require": "./dist/connect.cjs",
+      "default": "./dist/connect.js"
     },
     "./react": {
       "types": "./dist/react.d.ts",
