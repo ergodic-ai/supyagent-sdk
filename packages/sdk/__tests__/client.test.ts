@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { supyagent } from "../src/core/client.js";
-import type { ToolsResponse, ScopedClient, SupyagentClient } from "../src/core/types.js";
+import type { ToolsResponse, ScopedClient, SupyagentClient, ToolSearchResponse, ToolListResponse } from "../src/core/types.js";
 
 const MOCK_RESPONSE: ToolsResponse = {
   tools: [
@@ -335,5 +335,228 @@ describe("asAccount()", () => {
 
     // Both should have made separate fetch calls
     expect(callCount).toBe(2);
+  });
+});
+
+describe("searchTools()", () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const MOCK_SEARCH_RESPONSE: { ok: true; data: ToolSearchResponse } = {
+    ok: true,
+    data: {
+      tools: [
+        {
+          ...MOCK_RESPONSE.tools[0],
+          metadata: { ...MOCK_RESPONSE.tools[0].metadata, connected: true },
+          score: 0.8,
+        },
+        {
+          ...MOCK_RESPONSE.tools[1],
+          metadata: { ...MOCK_RESPONSE.tools[1].metadata, connected: false },
+          score: 0.4,
+        },
+      ],
+      total: 2,
+    },
+  };
+
+  it("calls the search endpoint with encoded query", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => MOCK_SEARCH_RESPONSE,
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const result = await client.searchTools("send email");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/tools/search/send%20email",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer sk_test_123",
+        }),
+      })
+    );
+
+    expect(result.tools).toHaveLength(2);
+    expect(result.total).toBe(2);
+    expect(result.tools[0].score).toBe(0.8);
+    expect(result.tools[0].metadata.connected).toBe(true);
+    expect(result.tools[1].score).toBe(0.4);
+    expect(result.tools[1].metadata.connected).toBe(false);
+  });
+
+  it("returns empty array when no matches", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, data: { tools: [], total: 0 } }),
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const result = await client.searchTools("nonexistent");
+
+    expect(result.tools).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+
+  it("works on scoped client with X-Account-Id header", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => MOCK_SEARCH_RESPONSE,
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const scoped = client.asAccount("user_456");
+    await scoped.searchTools("calendar");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/tools/search/calendar",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-Account-Id": "user_456",
+        }),
+      })
+    );
+  });
+});
+
+describe("toolsByProvider()", () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const MOCK_LIST_RESPONSE: { ok: true; data: ToolListResponse } = {
+    ok: true,
+    data: {
+      tools: [
+        {
+          ...MOCK_RESPONSE.tools[0],
+          metadata: { ...MOCK_RESPONSE.tools[0].metadata, connected: true },
+        },
+      ],
+      total: 1,
+    },
+  };
+
+  it("calls the provider endpoint", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => MOCK_LIST_RESPONSE,
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const result = await client.toolsByProvider("google");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/tools/provider/google",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer sk_test_123",
+        }),
+      })
+    );
+
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0].metadata.connected).toBe(true);
+    expect(result.total).toBe(1);
+  });
+
+  it("works on scoped client", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => MOCK_LIST_RESPONSE,
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    await client.asAccount("user_789").toolsByProvider("slack");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/tools/provider/slack",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-Account-Id": "user_789",
+        }),
+      })
+    );
+  });
+});
+
+describe("toolsByService()", () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const MOCK_LIST_RESPONSE: { ok: true; data: ToolListResponse } = {
+    ok: true,
+    data: {
+      tools: [
+        {
+          ...MOCK_RESPONSE.tools[0],
+          metadata: { ...MOCK_RESPONSE.tools[0].metadata, connected: true },
+        },
+      ],
+      total: 1,
+    },
+  };
+
+  it("calls the service endpoint", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => MOCK_LIST_RESPONSE,
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    const result = await client.toolsByService("gmail");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/tools/service/gmail",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer sk_test_123",
+        }),
+      })
+    );
+
+    expect(result.tools).toHaveLength(1);
+    expect(result.total).toBe(1);
+  });
+
+  it("works on scoped client", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => MOCK_LIST_RESPONSE,
+    });
+
+    const client = supyagent({ apiKey: "sk_test_123" });
+    await client.asAccount("user_abc").toolsByService("calendar");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://app.supyagent.com/api/v1/tools/service/calendar",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-Account-Id": "user_abc",
+        }),
+      })
+    );
   });
 });

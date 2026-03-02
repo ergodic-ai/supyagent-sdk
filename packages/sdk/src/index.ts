@@ -13,6 +13,10 @@ export type {
   ParsedSkillsDocument,
   MeOptions,
   MeResponse,
+  // Tool discovery
+  ScoredTool,
+  ToolSearchResponse,
+  ToolListResponse,
   // Connected accounts
   ConnectedAccount,
   ConnectedAccountWithIntegrations,

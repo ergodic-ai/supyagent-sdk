@@ -4,6 +4,8 @@ import type {
   ScopedClient,
   ToolFilterOptions,
   ToolsResponse,
+  ToolSearchResponse,
+  ToolListResponse,
   SkillsOptions,
   SkillsResult,
   ParsedSkillsDocument,
@@ -141,6 +143,36 @@ function createDataPlane(
       }
 
       return response;
+    },
+
+    async searchTools(query: string): Promise<ToolSearchResponse> {
+      const res = await fetcher(`/api/v1/tools/search/${encodeURIComponent(query)}`);
+      const json = await res.json();
+      const data = (json.data ?? json) as ToolSearchResponse;
+      return {
+        tools: Array.isArray(data.tools) ? data.tools : [],
+        total: data.total ?? 0,
+      };
+    },
+
+    async toolsByProvider(provider: string): Promise<ToolListResponse> {
+      const res = await fetcher(`/api/v1/tools/provider/${encodeURIComponent(provider)}`);
+      const json = await res.json();
+      const data = (json.data ?? json) as ToolListResponse;
+      return {
+        tools: Array.isArray(data.tools) ? data.tools : [],
+        total: data.total ?? 0,
+      };
+    },
+
+    async toolsByService(service: string): Promise<ToolListResponse> {
+      const res = await fetcher(`/api/v1/tools/service/${encodeURIComponent(service)}`);
+      const json = await res.json();
+      const data = (json.data ?? json) as ToolListResponse;
+      return {
+        tools: Array.isArray(data.tools) ? data.tools : [],
+        total: data.total ?? 0,
+      };
     },
   };
 }

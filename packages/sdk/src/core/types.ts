@@ -8,6 +8,8 @@ export interface ToolMetadata {
   bodyDefaults?: Record<string, string>;
   category?: string;
   tags?: string[];
+  /** Whether the user has the required integration connected. Present on all tool discovery endpoints. */
+  connected?: boolean;
 }
 
 /** A single tool as returned by the /api/v1/tools endpoint */
@@ -100,6 +102,25 @@ export interface SkillsResult {
   systemPrompt: string;
   /** Tool objects: loadSkill and apiCall */
   tools: Record<string, import("ai").Tool>;
+}
+
+// ── Tool Discovery ───────────────────────────────────────────────────────────
+
+/** A tool with a relevance score, returned by search endpoints */
+export interface ScoredTool extends OpenAITool {
+  score: number;
+}
+
+/** Response from search endpoints (/tools/search, /tools/names) */
+export interface ToolSearchResponse {
+  tools: ScoredTool[];
+  total: number;
+}
+
+/** Response from filter endpoints (/tools/provider, /tools/service) */
+export interface ToolListResponse {
+  tools: OpenAITool[];
+  total: number;
 }
 
 // ── Connected Accounts ───────────────────────────────────────────────────────
@@ -205,6 +226,12 @@ export interface ScopedClient {
   tools(options?: ToolFilterOptions): Promise<Record<string, import("ai").Tool>>;
   skills(options?: SkillsOptions): Promise<SkillsResult>;
   me(options?: MeOptions): Promise<MeResponse>;
+  /** Fuzzy search across tool names and descriptions. Returns scored results. */
+  searchTools(query: string): Promise<ToolSearchResponse>;
+  /** Get all tools for a specific provider (e.g. "google", "slack"). */
+  toolsByProvider(provider: string): Promise<ToolListResponse>;
+  /** Get all tools for a specific service (e.g. "gmail", "calendar"). */
+  toolsByService(service: string): Promise<ToolListResponse>;
 }
 
 /** The supyagent client interface */
@@ -212,6 +239,12 @@ export interface SupyagentClient {
   tools(options?: ToolFilterOptions): Promise<Record<string, import("ai").Tool>>;
   skills(options?: SkillsOptions): Promise<SkillsResult>;
   me(options?: MeOptions): Promise<MeResponse>;
+  /** Fuzzy search across tool names and descriptions. Returns scored results. */
+  searchTools(query: string): Promise<ToolSearchResponse>;
+  /** Get all tools for a specific provider (e.g. "google", "slack"). */
+  toolsByProvider(provider: string): Promise<ToolListResponse>;
+  /** Get all tools for a specific service (e.g. "gmail", "calendar"). */
+  toolsByService(service: string): Promise<ToolListResponse>;
   accounts: AccountsClient;
   /** Returns a client scoped to a connected account. All requests include X-Account-Id. */
   asAccount(externalId: string): ScopedClient;
