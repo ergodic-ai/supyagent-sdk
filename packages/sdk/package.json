@@ -1,6 +1,6 @@
 {
   "name": "@supyagent/sdk",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Supyagent SDK — AI SDK tools, persistence, and UI components",
   "type": "module",
   "exports": {
